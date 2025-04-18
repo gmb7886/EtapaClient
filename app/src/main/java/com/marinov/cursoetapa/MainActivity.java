@@ -1,4 +1,4 @@
-package com.marinov.colegioetapa;
+package com.marinov.cursoetapa;
 
 import android.app.DownloadManager;
 import android.net.Uri;
@@ -28,7 +28,7 @@ import android.content.SharedPreferences;
 public class MainActivity extends AppCompatActivity {
 
     private WebView webView;
-    private static final String URL = "https://areaexclusiva.colegioetapa.com.br/home";
+    private static final String URL = "https://areaexclusiva.etapa.com.br/home";
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {

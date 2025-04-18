@@ -1,4 +1,4 @@
-package com.marinov.colegioetapa;
+package com.marinov.cursoetapa;
 
 import org.junit.Test;
 

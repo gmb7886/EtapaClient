@@ -3,11 +3,11 @@ plugins {
 }
 
 android {
-    namespace = "com.marinov.colegioetapa"
+    namespace = "com.marinov.cursoetapa"
     compileSdk = 35
 
     defaultConfig {
-        applicationId = "com.marinov.colegioetapa"
+        applicationId = "com.marinov.cursoetapa"
         minSdk = 24
         targetSdk = 35
         versionCode = 1
