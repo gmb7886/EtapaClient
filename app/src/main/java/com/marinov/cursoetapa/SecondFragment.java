@@ -1,4 +1,4 @@
-package com.marinov.colegioetapa;
+package com.marinov.cursoetapa;
 
 import android.os.Bundle;
 import android.view.LayoutInflater;
@@ -9,7 +9,7 @@ import androidx.annotation.NonNull;
 import androidx.fragment.app.Fragment;
 import androidx.navigation.fragment.NavHostFragment;
 
-import com.marinov.colegioetapa.databinding.FragmentSecondBinding;
+import com.marinov.cursoetapa.databinding.FragmentSecondBinding;
 
 public class SecondFragment extends Fragment {
 

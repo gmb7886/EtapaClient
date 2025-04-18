@@ -35,8 +35,8 @@
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
                 <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="areaexclusiva.colegioetapa.com.br"/>
-                <data android:scheme="https" android:host="areaexclusiva.colegioetapa.com.br"/>
+                <data android:scheme="http" android:host="areaexclusiva.etapa.com.br"/>
+                <data android:scheme="https" android:host="areaexclusiva.etapa.com.br"/>
                 <data android:scheme="http" android:host="material.etapadigital.com.br"/>
                 <data android:scheme="https" android:host="material.etapadigital.com.br"/>
                 <data android:scheme="http" android:host="www.etapalink.com.br"/>
