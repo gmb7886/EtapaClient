@@ -9,7 +9,7 @@ Meu cliente alternativo para acessar https:// areaexclusiv@ . colegio etap@ . co
   2. Acesso ao Et@p@ Link;
   3. Gráficos de desempenho PG e simulados;
   4. Download das provas, gabaritos e resoluções;
-  5. Amigável para tablets (pode funcionar na horizontal) (NÃO TESTADO);
+  5. Amigável para tablets (pode funcionar na horizontal);
   6. Abre links externos (de outros apps) relacionados ao Et@p@.
 
 🚫 A SER IMPLEMENTADO NO FUTURO:
