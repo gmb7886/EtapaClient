@@ -215,7 +215,7 @@ public class ProvasFragment extends Fragment {
                 c.setRequestMethod("GET");
                 c.setRequestProperty("Accept", "application/vnd.github.v3+json");
                 c.setRequestProperty("User-Agent", "EtapaApp");
-                c.setRequestProperty("Authorization", "Bearer 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");
+                c.setRequestProperty("Authorization", "Bearer TOKEN SACANA");
 
                 int responseCode = c.getResponseCode();
                 Log.d(TAG, "HTTP response code: " + responseCode);
