@@ -79,13 +79,21 @@ public class HomeFragment extends Fragment {
         webView = view.findViewById(R.id.webview);
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
 
-        // Configurações do WebView
+        // --- BLOQUEIO DE ZOOM ---
         WebSettings settings = webView.getSettings();
         settings.setJavaScriptEnabled(true);
         settings.setDomStorageEnabled(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
         settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
+
+        // --- BLOQUEIO DE SELEÇÃO DE TEXTO ---
+        webView.setOnLongClickListener(v -> true);
+        webView.setLongClickable(false);
+        webView.setHapticFeedbackEnabled(false);
 
         // Configuração de cookies
         cookieManager = CookieManager.getInstance();
@@ -108,6 +116,12 @@ public class HomeFragment extends Fragment {
             @Override
             public void onPageFinished(WebView view, String url) {
                 saveCookies();
+                // Injeta CSS/JS para garantir que não haja seleção de texto
+                view.evaluateJavascript(
+                        "document.documentElement.style.webkitTouchCallout='none';" +
+                                "document.documentElement.style.webkitUserSelect='none';",
+                        null
+                );
                 Log.d("WebView", "Página carregada: " + url);
             }
 
@@ -137,21 +151,17 @@ public class HomeFragment extends Fragment {
     }
 
     private void configureSystemBarsInsets(View view) {
-        // Garante que o WebView foi inicializado
         webView = view.findViewById(R.id.webview);
-
         ViewCompat.setOnApplyWindowInsetsListener(view, (v, windowInsets) -> {
             Insets insets = windowInsets.getInsets(WindowInsetsCompat.Type.systemBars());
-
             if (webView != null) {
                 webView.setPadding(
-                        insets.left,   // Margem esquerda
-                        insets.top,    // Status bar
-                        insets.right,  // Margem direita
-                        insets.bottom  // Navigation bar
+                        insets.left,
+                        insets.top,
+                        insets.right,
+                        insets.bottom
                 );
             }
-
             return windowInsets;
         });
     }
@@ -176,7 +186,8 @@ public class HomeFragment extends Fragment {
         SharedPreferences prefs = requireActivity().getSharedPreferences(PREFS_PERMISSIONS, Context.MODE_PRIVATE);
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && !prefs.getBoolean(KEY_ASKED_STORAGE, false)) {
             prefs.edit().putBoolean(KEY_ASKED_STORAGE, true).apply();
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_STORAGE_PERMISSION);
             }
         }
@@ -188,7 +199,6 @@ public class HomeFragment extends Fragment {
                 showStoragePermissionToast();
                 return;
             }
-
             DownloadManager.Request request = createDownloadRequest(url, userAgent, contentDisposition, mimeType);
             executeDownload(request);
         });
@@ -199,10 +209,12 @@ public class HomeFragment extends Fragment {
     }
 
     private boolean hasStoragePermission() {
-        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
-    private DownloadManager.Request createDownloadRequest(String url, String userAgent, String contentDisposition, String mimeType) {
+    private DownloadManager.Request createDownloadRequest(String url, String userAgent,
+                                                          String contentDisposition, String mimeType) {
         DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
         return request.setMimeType(mimeType)
                 .addRequestHeader("User-Agent", userAgent)
@@ -226,16 +238,15 @@ public class HomeFragment extends Fragment {
     }
 
     private boolean hasInternetConnection() {
-        ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
+        ConnectivityManager cm = (ConnectivityManager) requireContext()
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) return false;
-
         Network network = cm.getActiveNetwork();
         if (network == null) return false;
-
-        NetworkCapabilities capabilities = cm.getNetworkCapabilities(network);
-        return capabilities != null &&
-                (capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                        capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
+        NetworkCapabilities caps = cm.getNetworkCapabilities(network);
+        return caps != null &&
+                (caps.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                        caps.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR));
     }
 
     private void handleWebViewError(WebResourceError error) {
@@ -262,18 +273,17 @@ public class HomeFragment extends Fragment {
     }
 
     @Override
-    public void onRequestPermissionsResult(int requestCode, @NonNull String[] permissions, @NonNull int[] grantResults) {
+    public void onRequestPermissionsResult(int requestCode,
+                                           @NonNull String[] permissions,
+                                           @NonNull int[] grantResults) {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults);
         if (requestCode == REQUEST_STORAGE_PERMISSION) {
-            handleStoragePermissionResult(grantResults);
-        }
-    }
-
-    private void handleStoragePermissionResult(int[] grantResults) {
-        if (grantResults.length > 0 && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
-            Toast.makeText(requireContext(), "Permissão concedida!", Toast.LENGTH_SHORT).show();
-        } else {
-            Toast.makeText(requireContext(), "Permissão necessária para downloads!", Toast.LENGTH_LONG).show();
+            if (grantResults.length > 0
+                    && grantResults[0] == PackageManager.PERMISSION_GRANTED) {
+                Toast.makeText(requireContext(), "Permissão concedida!", Toast.LENGTH_SHORT).show();
+            } else {
+                Toast.makeText(requireContext(), "Permissão necessária para downloads!", Toast.LENGTH_LONG).show();
+            }
         }
     }
 
