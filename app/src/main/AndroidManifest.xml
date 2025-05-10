@@ -3,6 +3,7 @@
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
+    <!-- Permissões necessárias -->
     <uses-permission android:name="android.permission.INTERNET"/>
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
         android:maxSdkVersion="28"/>
@@ -26,6 +27,7 @@
             android:name="android.notch_support"
             android:value="true"/>
 
+        <!-- Tela principal -->
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize"
@@ -38,6 +40,7 @@
             </intent-filter>
         </activity>
 
+        <!-- WebActivity -->
         <activity
             android:name=".WebActivity"
             android:exported="true">
@@ -53,6 +56,11 @@
                 <data android:scheme="https" android:host="www.etapalink.com.br"/>
             </intent-filter>
         </activity>
+
+        <!-- ProvasActivity: lista arquivos do GitHub -->
+        <activity
+            android:name=".ProvasActivity"
+            android:exported="false" />
 
     </application>
 </manifest>
