@@ -1,5 +1,22 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <color name="black">#FF000000</color>
-    <color name="white">#FFFFFFFF</color>
+    <!-- Primária escura neutra -->
+    <color name="colorPrimary">#000000</color>
+    <color name="colorOnPrimary">#000000</color>
+
+    <!-- Secundária um pouco mais clara -->
+    <color name="colorSecondary">#FFFFFF</color>
+    <color name="colorOnSecondary">#FFFFFF</color>
+
+    <!-- Superfície principal bem escura -->
+    <color name="colorSurface">#FFFFFF</color>
+    <color name="colorOnSurface">#E0E0E0</color>
+
+    <!-- Variante de superfície para elevações leves -->
+    <color name="colorSurfaceVariant">#1E1E1E</color>
+    <color name="colorOnSurfaceVariant">#000000</color>
+
+    <!-- Fundo do app (idem surface em dark) -->
+    <color name="colorBackground">#FFFFFF</color>
+    <color name="colorOnBackground">#E0E0E0</color>
 </resources>

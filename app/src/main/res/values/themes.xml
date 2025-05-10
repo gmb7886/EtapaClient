@@ -1,9 +1,33 @@
+<?xml version="1.0" encoding="utf-8"?>
 <resources xmlns:tools="http://schemas.android.com/tools">
-    <!-- Base application theme. -->
-    <style name="Base.Theme.ColégioEtapa" parent="Theme.Material3.DayNight.NoActionBar">
-        <!-- Customize your light theme here. -->
-        <!-- <item name="colorPrimary">@color/my_light_primary</item> -->
+
+    <!-- Tema da aplicação, baseado em Material3 DayNight -->
+    <style name="Theme.ColégioEtapa" parent="Theme.Material3.DayNight.NoActionBar">
+        <!-- Paleta principal -->
+        <item name="colorPrimary">@color/colorPrimary</item>
+        <item name="colorOnPrimary">@color/colorOnPrimary</item>
+        <item name="colorSecondary">@color/colorSecondary</item>
+        <item name="colorOnSecondary">@color/colorOnSecondary</item>
+        <item name="colorSurface">@color/colorSurface</item>
+        <item name="colorOnSurface">@color/colorOnSurface</item>
+        <item name="colorSurfaceVariant">@color/colorSurfaceVariant</item>
+        <item name="colorOnSurfaceVariant">@color/colorOnSurfaceVariant</item>
+
+        <!-- Aplica style customizado na BottomNavigationView -->
+        <item name="bottomNavigationStyle">@style/Widget.ColégioEtapa.BottomNavigationView</item>
     </style>
 
-    <style name="Theme.ColégioEtapa" parent="Base.Theme.ColégioEtapa" />
+    <!-- Style custom para BottomNavigationView -->
+    <style name="Widget.ColégioEtapa.BottomNavigationView"
+        parent="Widget.Material3.BottomNavigationView">
+        <!-- Dimensões e padding -->
+        <item name="itemIconSize">32dp</item>
+        <item name="itemPaddingTop">8dp</item>
+        <item name="itemPaddingBottom">8dp</item>
+
+        <!-- Tint dinâmico de ícone e texto -->
+        <item name="itemIconTint">@color/selector_bottom_nav_item_color</item>
+        <item name="itemTextColor">@color/selector_bottom_nav_item_color</item>
+    </style>
+
 </resources>

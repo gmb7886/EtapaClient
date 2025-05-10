@@ -1,13 +1,16 @@
 <?xml version="1.0" encoding="utf-8"?>
-<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+<manifest
+    xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET"/>
-    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" android:maxSdkVersion="28"/>
+    <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE"
+        android:maxSdkVersion="28"/>
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE"/>
-    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE"/>
 
     <application
+        android:name=".MyApplication"
         android:allowBackup="true"
         android:dataExtractionRules="@xml/data_extraction_rules"
         android:fullBackupContent="@xml/backup_rules"
@@ -16,34 +19,40 @@
         android:roundIcon="@mipmap/ic_launcher_round"
         android:supportsRtl="true"
         android:theme="@style/Theme.ColégioEtapa"
+        android:enableOnBackInvokedCallback="true"
         tools:targetApi="31">
+
+        <meta-data
+            android:name="android.notch_support"
+            android:value="true"/>
 
         <activity
             android:name=".MainActivity"
             android:configChanges="orientation|screenSize"
             android:exported="true"
-            android:theme="@style/Theme.ColégioEtapa">
+            android:theme="@style/Theme.ColégioEtapa"
+            android:windowSoftInputMode="adjustResize">
             <intent-filter>
-                <action android:name="android.intent.action.MAIN" />
-                <category android:name="android.intent.category.LAUNCHER" />
+                <action android:name="android.intent.action.MAIN"/>
+                <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
 
-        <activity android:name=".WebActivity"
+        <activity
+            android:name=".WebActivity"
             android:exported="true">
             <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="areaexclusiva.colegioetapa.com.br"/>
+                <action android:name="android.intent.action.VIEW"/>
+                <category android:name="android.intent.category.DEFAULT"/>
+                <category android:name="android.intent.category.BROWSABLE"/>
+                <data android:scheme="http"  android:host="areaexclusiva.colegioetapa.com.br"/>
                 <data android:scheme="https" android:host="areaexclusiva.colegioetapa.com.br"/>
-                <data android:scheme="http" android:host="material.etapadigital.com.br"/>
+                <data android:scheme="http"  android:host="material.etapadigital.com.br"/>
                 <data android:scheme="https" android:host="material.etapadigital.com.br"/>
-                <data android:scheme="http" android:host="www.etapalink.com.br"/>
+                <data android:scheme="http"  android:host="www.etapalink.com.br"/>
                 <data android:scheme="https" android:host="www.etapalink.com.br"/>
             </intent-filter>
         </activity>
 
     </application>
-
 </manifest>
