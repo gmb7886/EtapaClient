@@ -76,16 +76,14 @@ public class ProvasFragment extends Fragment {
             }
         });
 
-        listView.setOnItemClickListener(new AdapterView.OnItemClickListener() {
-            @Override public void onItemClick(AdapterView<?> parent, View v, int pos, long id) {
-                RepoItem item = adapter.getItem(pos);
-                if (item == null) return;
-                if ("dir".equals(item.type)) {
-                    currentPath = item.path;
-                    startFetch();
-                } else {
-                    startDownload(item);
-                }
+        listView.setOnItemClickListener((parent, v, pos, id) -> {
+            RepoItem item = adapter.getItem(pos);
+            if (item == null) return;
+            if ("dir".equals(item.type)) {
+                currentPath = item.path;
+                startFetch();
+            } else {
+                startDownload(item);
             }
         });
 
@@ -130,11 +128,12 @@ public class ProvasFragment extends Fragment {
     }
 
     private static class RepoAdapter extends ArrayAdapter<RepoItem> {
-        private List<RepoItem> original;
+        private final List<RepoItem> original;
         RepoAdapter(Context ctx, List<RepoItem> items) {
             super(ctx, R.layout.item_repo, new ArrayList<>());
             this.original = new ArrayList<>(items);
         }
+
         @NonNull
         @Override
         public View getView(int pos, View convertView, @NonNull ViewGroup parent) {
@@ -149,6 +148,7 @@ public class ProvasFragment extends Fragment {
             }
             return row;
         }
+
         @Override
         public Filter getFilter() {
             return new Filter() {
@@ -168,6 +168,7 @@ public class ProvasFragment extends Fragment {
                     results.count = filtered.size();
                     return results;
                 }
+
                 @Override
                 protected void publishResults(CharSequence constraint, FilterResults results) {
                     clear();
@@ -177,6 +178,7 @@ public class ProvasFragment extends Fragment {
                 }
             };
         }
+
         public void setOriginal(List<RepoItem> items) {
             original.clear();
             original.addAll(items);
@@ -184,8 +186,9 @@ public class ProvasFragment extends Fragment {
     }
 
     private static class FetchFilesTask extends AsyncTask<String, Void, List<RepoItem>> {
-        private WeakReference<ProvasFragment> fragRef;
+        private final WeakReference<ProvasFragment> fragRef;
         FetchFilesTask(ProvasFragment frag) { fragRef = new WeakReference<>(frag); }
+
         @Override
         protected void onPreExecute() {
             ProvasFragment f = fragRef.get(); if (f == null || !f.isAdded()) return;
@@ -194,41 +197,71 @@ public class ProvasFragment extends Fragment {
             f.adapter.clear();
             f.adapter.setOriginal(new ArrayList<>());
         }
+
         @Override
         protected List<RepoItem> doInBackground(String... p) {
             String path = p.length > 0 ? p[0] : "";
-            List<RepoItem> list = new ArrayList<>(); HttpURLConnection c = null;
+            List<RepoItem> list = new ArrayList<>();
+            HttpURLConnection c = null;
+
             try {
                 String api = "https://api.github.com/repos/gmb7886/schooltests/contents" +
                         (path.isEmpty() ? "" : "/" + path);
+
+                Log.d(TAG, "GitHub API URL: " + api); // <-- 🔍 LOG ADICIONADO AQUI
+
                 URL u = new URL(api);
                 c = (HttpURLConnection) u.openConnection();
                 c.setRequestMethod("GET");
                 c.setRequestProperty("Accept", "application/vnd.github.v3+json");
                 c.setRequestProperty("User-Agent", "EtapaApp");
-                if (isCancelled()) return list;
-                if (c.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                    InputStream is = c.getInputStream();
-                    BufferedReader r = new BufferedReader(new InputStreamReader(is));
-                    StringBuilder sb = new StringBuilder(); String l;
-                    while ((l = r.readLine()) != null) sb.append(l);
-                    r.close();
-                    JSONArray arr = new JSONArray(sb.toString());
-                    for (int i = 0; i < arr.length(); i++) {
-                        JSONObject o = arr.getJSONObject(i);
-                        list.add(new RepoItem(
-                                o.getString("name"),
-                                o.getString("type"),
-                                o.getString("path"),
-                                o.optString("download_url", "")
-                        ));
+                c.setRequestProperty("Authorization", "Bearer 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");
+
+                int responseCode = c.getResponseCode();
+                Log.d(TAG, "HTTP response code: " + responseCode);
+
+                if (responseCode != HttpURLConnection.HTTP_OK) {
+                    InputStream errorStream = c.getErrorStream();
+                    if (errorStream != null) {
+                        BufferedReader reader = new BufferedReader(new InputStreamReader(errorStream));
+                        StringBuilder error = new StringBuilder();
+                        String line;
+                        while ((line = reader.readLine()) != null) error.append(line);
+                        reader.close();
+                        Log.e(TAG, "GitHub API error: " + error.toString());
                     }
+                    return list;
                 }
+
+                if (isCancelled()) return list;
+
+                InputStream is = c.getInputStream();
+                BufferedReader r = new BufferedReader(new InputStreamReader(is));
+                StringBuilder sb = new StringBuilder();
+                String l;
+                while ((l = r.readLine()) != null) sb.append(l);
+                r.close();
+
+                JSONArray arr = new JSONArray(sb.toString());
+                for (int i = 0; i < arr.length(); i++) {
+                    JSONObject o = arr.getJSONObject(i);
+                    list.add(new RepoItem(
+                            o.getString("name"),
+                            o.getString("type"),
+                            o.getString("path"),
+                            o.optString("download_url", "")
+                    ));
+                }
+
             } catch (Exception e) {
                 Log.e(TAG, "Erro fetch", e);
-            } finally { if (c != null) c.disconnect(); }
+            } finally {
+                if (c != null) c.disconnect();
+            }
+
             return list;
         }
+
         @Override
         protected void onPostExecute(List<RepoItem> res) {
             ProvasFragment f = fragRef.get(); if (f == null || !f.isAdded()) return;
