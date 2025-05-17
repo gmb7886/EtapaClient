@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<androidx.coordinatorlayout.widget.CoordinatorLayout
+    xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:fitsSystemWindows="true">
+
+    <!-- Título -->
+    <TextView
+        android:id="@+id/txt_titulo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="6dp"
+        android:layout_marginHorizontal="16dp"
+        android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"
+        android:textColor="?attr/colorPrimary"
+        android:visibility="gone"
+        app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+
+    <!-- Conteúdo com Quebras -->
+    <ScrollView
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:layout_marginTop="72dp"
+        android:paddingHorizontal="16dp"
+        android:paddingBottom="18dp"
+    app:layout_behavior="@string/appbar_scrolling_view_behavior">
+
+    <TextView
+        android:id="@+id/txt_conteudo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:textSize="16sp"
+        android:lineSpacingMultiplier="1.25"
+        android:textColor="?attr/colorOnSurface"/>
+</ScrollView>
+
+    <!-- Erro -->
+<TextView
+android:id="@+id/txt_erro"
+android:layout_width="match_parent"
+android:layout_height="match_parent"
+android:gravity="center"
+android:padding="24dp"
+android:textAppearance="?attr/textAppearanceBodyLarge"
+android:visibility="gone"
+app:layout_behavior="@string/appbar_scrolling_view_behavior"/>
+
+    <!-- Loading -->
+<com.google.android.material.progressindicator.CircularProgressIndicator
+android:id="@+id/progress_circular"
+android:layout_width="48dp"
+android:layout_height="48dp"
+android:layout_gravity="center"
+android:visibility="gone"
+app:indicatorColor="?attr/colorPrimary"/>
+
+    </androidx.coordinatorlayout.widget.CoordinatorLayout>
