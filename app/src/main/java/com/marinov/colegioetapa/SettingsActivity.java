@@ -102,10 +102,13 @@ public class SettingsActivity extends AppCompatActivity {
         Button btnTwitter = findViewById(R.id.btn_twitter);
         Button btnReddit = findViewById(R.id.btn_reddit);
         Button btnGithub = findViewById(R.id.btn_github);
+        Button btnYoutube = findViewById(R.id.btn_youtube);
+
 
         btnTwitter.setOnClickListener(v -> openUrl("http://x.com/gmb7886"));
         btnReddit.setOnClickListener(v -> openUrl("https://www.reddit.com/user/GMB7886/"));
         btnGithub.setOnClickListener(v -> openUrl("https://github.com/gmb7886/"));
+        btnYoutube.setOnClickListener(v -> openUrl("https://youtube.com/@CanalDoMarinov"));
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
             btnCheck.setEnabled(false);
             btnCheck.setAlpha(0.5f);

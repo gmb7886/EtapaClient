@@ -104,6 +104,7 @@ public class MainActivity extends AppCompatActivity {
 
         solicitarPermissaoNotificacao();
         iniciarNotasWorker();
+        iniciarUpdateWorker();
     }
 
     @Override
@@ -116,7 +117,18 @@ public class MainActivity extends AppCompatActivity {
             bottomNav.setSelectedItemId(target);
         }
     }
+    private void iniciarUpdateWorker() {
+        PeriodicWorkRequest updateWork = new PeriodicWorkRequest.Builder(
+                UpdateCheckWorker.class,
+                15, TimeUnit.MINUTES
+        ).build();
 
+        WorkManager.getInstance(this).enqueueUniquePeriodicWork(
+                "UpdateCheckWorker",
+                ExistingPeriodicWorkPolicy.KEEP,
+                updateWork
+        );
+    }
     private void solicitarPermissaoNotificacao() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS)
@@ -131,7 +143,7 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void iniciarNotasWorker() {
-        PeriodicWorkRequest notasWork = new PeriodicWorkRequest.Builder(NotasWorker.class, 30, TimeUnit.MINUTES)
+        PeriodicWorkRequest notasWork = new PeriodicWorkRequest.Builder(NotasWorker.class, 15, TimeUnit.MINUTES)
                 .build();
 
         WorkManager.getInstance(this).enqueueUniquePeriodicWork(
