@@ -2,6 +2,8 @@ package com.marinov.colegioetapa;
 
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
+import android.content.Intent;
+import android.content.SharedPreferences;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
@@ -78,7 +80,6 @@ public class SettingsActivity extends AppCompatActivity {
             }
         }
     }
-
     private void setupToolbarInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(
                 findViewById(R.id.toolbar),
@@ -98,7 +99,13 @@ public class SettingsActivity extends AppCompatActivity {
     private void setupUI() {
         Button btnCheck = findViewById(R.id.btn_check_update);
         Button btnClear = findViewById(R.id.btn_clear_data);
+        Button btnTwitter = findViewById(R.id.btn_twitter);
+        Button btnReddit = findViewById(R.id.btn_reddit);
+        Button btnGithub = findViewById(R.id.btn_github);
 
+        btnTwitter.setOnClickListener(v -> openUrl("http://x.com/gmb7886"));
+        btnReddit.setOnClickListener(v -> openUrl("https://www.reddit.com/user/GMB7886/"));
+        btnGithub.setOnClickListener(v -> openUrl("https://github.com/gmb7886/"));
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
             btnCheck.setEnabled(false);
             btnCheck.setAlpha(0.5f);
@@ -115,10 +122,32 @@ public class SettingsActivity extends AppCompatActivity {
             CookieManager cm = CookieManager.getInstance();
             cm.removeAllCookies(success -> {});
             cm.flush();
+            clearAllCacheData();
             Toast.makeText(this, "Base de dados apagada com sucesso!", Toast.LENGTH_SHORT).show();
         });
     }
+    private void clearAllCacheData() {
+        SharedPreferences horariosPrefs = getSharedPreferences("horarios_prefs", MODE_PRIVATE);
+        horariosPrefs.edit().clear().apply();
 
+        SharedPreferences calendarioPrefs = getSharedPreferences("calendario_prefs", MODE_PRIVATE);
+        calendarioPrefs.edit().clear().apply();
+
+        SharedPreferences materiaPrefs = getSharedPreferences("materia_cache", MODE_PRIVATE);
+        materiaPrefs.edit().clear().apply();
+
+        SharedPreferences notasPrefs = getSharedPreferences("notas_prefs", MODE_PRIVATE);
+        notasPrefs.edit().clear().apply();
+    }
+    private void openUrl(String url) {
+        try {
+            Intent intent = new Intent(Intent.ACTION_VIEW);
+            intent.setData(Uri.parse(url));
+            startActivity(intent);
+        } catch (Exception e) {
+            Log.e(TAG, "Erro ao abrir URL", e);
+        }
+    }
     @Override
     public boolean onSupportNavigateUp() {
         finish();
