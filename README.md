@@ -22,6 +22,7 @@ Meu cliente alternativo para acessar https://areaexclusiva.colegioetapa.com.br/ 
 🚫 A SER IMPLEMENTADO NO FUTURO:
   1. Login persistente (parcialmente corrigido, ainda é preciso logar novamente após algumas horas);
   2. EADs em tela cheia.
+  3. Enviar redações pelo Escreve Etapa
 
 Bom proveito!
 

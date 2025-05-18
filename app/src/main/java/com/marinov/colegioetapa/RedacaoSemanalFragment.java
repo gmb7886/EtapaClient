@@ -2,8 +2,9 @@ package com.marinov.colegioetapa;
 
 import android.Manifest;
 import android.annotation.SuppressLint;
-import android.app.DownloadManager;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -15,10 +16,13 @@ import android.os.Bundle;
 import android.os.Environment;
 import android.os.Handler;
 import android.os.Looper;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
+import android.webkit.CookieManager;
+import android.webkit.MimeTypeMap;
 import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -39,6 +43,15 @@ import androidx.webkit.WebViewFeature;
 import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 
+import java.io.File;
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.Executors;
+
 public class RedacaoSemanalFragment extends Fragment {
     public static final String URL = "https://areaexclusiva.colegioetapa.com.br/redacao";
     private static final String PREFS_NAME = "app_prefs";
@@ -56,11 +69,10 @@ public class RedacaoSemanalFragment extends Fragment {
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
 
-        // Inicializa elementos da UI
         layoutSemInternet = view.findViewById(R.id.layout_sem_internet);
         btnTentarNovamente = view.findViewById(R.id.btn_tentar_novamente);
         webView = view.findViewById(R.id.webview);
-        // Verifica conexão inicial
+
         if (isOnline()) {
             initializeWebView(view);
         } else {
@@ -69,12 +81,12 @@ public class RedacaoSemanalFragment extends Fragment {
 
         return view;
     }
+
     private void navigateToHome() {
         try {
             BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
             bottomNav.setSelectedItemId(R.id.navigation_home);
-        } catch (Exception e) {
-        }
+        } catch (Exception ignored) {}
     }
 
     @SuppressLint({"SetJavaScriptEnabled", "WrongConstant"})
@@ -96,7 +108,6 @@ public class RedacaoSemanalFragment extends Fragment {
 
         applyWebViewDarkMode(settings);
 
-        // Configurações de segurança
         webView.setOnLongClickListener(v -> true);
         webView.setLongClickable(false);
         webView.setHapticFeedbackEnabled(false);
@@ -189,12 +200,10 @@ public class RedacaoSemanalFragment extends Fragment {
     private void showNoInternetUI() {
         webView.setVisibility(View.GONE);
         layoutSemInternet.setVisibility(View.VISIBLE);
-
-        btnTentarNovamente.setOnClickListener(v -> navigateToHome());{
-            if (isOnline()) {
-                layoutSemInternet.setVisibility(View.GONE);
-                webView.reload();
-            }
+        btnTentarNovamente.setOnClickListener(v -> navigateToHome());
+        if (isOnline()) {
+            layoutSemInternet.setVisibility(View.GONE);
+            webView.reload();
         }
     }
 
@@ -204,32 +213,120 @@ public class RedacaoSemanalFragment extends Fragment {
         return (netInfo != null && netInfo.isConnected());
     }
 
-    // Métodos de cookies (implemente conforme sua lógica)
     private void restoreCookies() {/* Sua implementação */}
-    private void saveCookies() {/* Sua implementação */}
+    private void saveCookies()   {/* Sua implementação */}
 
     private void checkStoragePermissions() {
         SharedPreferences prefs = requireContext().getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && !prefs.getBoolean(KEY_ASKED_STORAGE, false)) {
             prefs.edit().putBoolean(KEY_ASKED_STORAGE, true).apply();
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
                 requestPermissions(new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE}, REQUEST_STORAGE_PERMISSION);
             }
         }
     }
 
     private void configureDownloadListener() {
-        webView.setDownloadListener((url, userAgent, contentDisposition, mimeType, contentLength) -> {
+        webView.setDownloadListener((url, userAgentArg, contentDisposition, mimeType, contentLength) -> {
             if (needsStoragePermission() && !hasStoragePermission()) {
                 Toast.makeText(requireContext(), "Permissão de armazenamento necessária", Toast.LENGTH_SHORT).show();
                 return;
             }
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(url));
-            request.allowScanningByMediaScanner();
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, URLUtil.guessFileName(url, contentDisposition, mimeType));
-            DownloadManager dm = (DownloadManager) requireContext().getSystemService(Context.DOWNLOAD_SERVICE);
-            if (dm != null) dm.enqueue(request);
+            String cookies   = CookieManager.getInstance().getCookie(url);
+            String userAgent = webView.getSettings().getUserAgentString();
+            String referer   = webView.getUrl();
+            String fileName  = URLUtil.guessFileName(url, contentDisposition, mimeType);
+
+            downloadManualmente(url, fileName, cookies, userAgent, referer, mimeType);
+            Toast.makeText(requireContext(), "Iniciando download manual…", Toast.LENGTH_SHORT).show();
+        });
+    }
+
+    private void downloadManualmente(
+            String url,
+            String fileName,
+            String cookies,
+            String userAgent,
+            String referer,
+            @Nullable String mimeType
+    ) {
+        Executors.newSingleThreadExecutor().execute(() -> {
+            InputStream in = null;
+            OutputStream out = null;
+            HttpURLConnection conn = null;
+            Uri targetUri = null;
+
+            try {
+                URL u = new URL(url);
+                conn = (HttpURLConnection) u.openConnection();
+                conn.setInstanceFollowRedirects(false);
+                conn.setRequestProperty("Cookie", cookies);
+                conn.setRequestProperty("User-Agent", userAgent);
+                conn.setRequestProperty("Referer", referer);
+                conn.connect();
+
+                int code = conn.getResponseCode();
+                if (code / 100 == 3) {
+                    String loc = conn.getHeaderField("Location");
+                    conn.disconnect();
+                    downloadManualmente(loc, fileName, cookies, userAgent, referer, mimeType);
+                    return;
+                }
+                if (code != HttpURLConnection.HTTP_OK) {
+                    throw new IOException("HTTP error code: " + code);
+                }
+
+                in = conn.getInputStream();
+
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+                    if (mimeType != null) values.put(MediaStore.Downloads.MIME_TYPE, mimeType);
+                    values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                    targetUri = requireContext().getContentResolver()
+                            .insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (targetUri == null) {
+                        throw new IOException("Falha ao criar URI no MediaStore");
+                    }
+                    out = requireContext().getContentResolver().openOutputStream(targetUri);
+                } else {
+                    File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    File outFile = new File(dir, fileName);
+                    out = new FileOutputStream(outFile);
+                    targetUri = Uri.fromFile(outFile);
+                }
+
+                byte[] buf = new byte[8 * 1024];
+                int len;
+                while ((len = in.read(buf)) != -1) {
+                    out.write(buf, 0, len);
+                }
+                out.flush();
+
+                Uri finalUri = targetUri;
+                new Handler(Looper.getMainLooper()).post(() -> {
+                    Toast.makeText(requireContext(),
+                            "Download concluído: " + fileName,
+                            Toast.LENGTH_LONG).show();
+                    if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                        requireContext().sendBroadcast(
+                                new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, finalUri)
+                        );
+                    }
+                });
+            } catch (Exception e) {
+                Log.e("DownloadManual", "erro no download", e);
+                new Handler(Looper.getMainLooper()).post(() ->
+                        Toast.makeText(requireContext(),
+                                "Falha no download: " + e.getMessage(),
+                                Toast.LENGTH_LONG).show()
+                );
+            } finally {
+                if (conn != null) conn.disconnect();
+                try { if (in  != null) in.close();  } catch (IOException ignored) {}
+                try { if (out != null) out.close(); } catch (IOException ignored) {}
+            }
         });
     }
 
@@ -238,7 +335,8 @@ public class RedacaoSemanalFragment extends Fragment {
     }
 
     private boolean hasStoragePermission() {
-        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
+        return ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                == PackageManager.PERMISSION_GRANTED;
     }
 
     @Override
