@@ -16,6 +16,7 @@ import android.view.ViewGroup;
 import android.webkit.CookieManager;
 import android.widget.LinearLayout;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -65,6 +66,7 @@ public class MateriadeProva extends Fragment {
         btnWhatsapp = root.findViewById(R.id.btn_whatsapp);
         btnWechat = root.findViewById(R.id.btn_wechat);
         btnChatgpt = root.findViewById(R.id.btn_chatgpt);
+        btnDeepseek = root.findViewById(R.id.btn_deepseek);
         carregarConteudo();
         configurarAcoesCompartilhamento();
         return root;
@@ -78,8 +80,11 @@ public class MateriadeProva extends Fragment {
 
         // ChatGPT (Supondo que o pacote seja válido)
         btnChatgpt.setOnClickListener(v -> compartilharConteudo("com.openai.chatgpt"));
+        btnDeepseek.setOnClickListener(v -> {
+            Toast.makeText(requireContext(), "Não suportado no momento.", Toast.LENGTH_SHORT).show();
+        });
     }
-    private MaterialButton btnWhatsapp, btnWechat, btnChatgpt;
+    private MaterialButton btnWhatsapp, btnWechat, btnChatgpt, btnDeepseek;
     private void compartilharConteudo(String pacoteApp) {
         try {
             String texto = txtTitulo.getText() + "\n\n" + txtConteudo.getText().toString();
