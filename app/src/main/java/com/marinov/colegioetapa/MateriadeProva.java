@@ -1,7 +1,9 @@
 package com.marinov.colegioetapa;
 
 import android.content.Context;
+import android.content.Intent;
 import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.net.ConnectivityManager;
 import android.net.NetworkInfo;
 import android.os.AsyncTask;
@@ -12,6 +14,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.widget.LinearLayout;
 import android.widget.TextView;
 
 import androidx.annotation.NonNull;
@@ -19,6 +22,7 @@ import androidx.annotation.Nullable;
 import androidx.core.text.HtmlCompat;
 import androidx.fragment.app.Fragment;
 
+import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
 import org.jsoup.Jsoup;
@@ -29,7 +33,7 @@ public class MateriadeProva extends Fragment {
     private static final String ARG_URL = "url_prova";
     private static final String CACHE_PREFS = "materia_cache";
     private static final String CACHE_KEY_PREFIX = "materia_";
-
+    private LinearLayout barraCompartilhamento;
     private CircularProgressIndicator progressBar;
     private TextView txtErro, txtTitulo, txtConteudo;
     private CacheHelper cache;
@@ -51,18 +55,58 @@ public class MateriadeProva extends Fragment {
             @Nullable Bundle savedInstanceState
     ) {
         View root = inflater.inflate(R.layout.fragment_materia_prova, container, false);
-
+        barraCompartilhamento = root.findViewById(R.id.barra_compartilhamento);
         progressBar   = root.findViewById(R.id.progress_circular);
         txtErro       = root.findViewById(R.id.txt_erro);
         txtTitulo     = root.findViewById(R.id.txt_titulo);
         txtConteudo   = root.findViewById(R.id.txt_conteudo);
-
         cache = new CacheHelper(requireContext());
         currentUrl = getArguments() != null ? getArguments().getString(ARG_URL) : "";
-
+        btnWhatsapp = root.findViewById(R.id.btn_whatsapp);
+        btnWechat = root.findViewById(R.id.btn_wechat);
+        btnChatgpt = root.findViewById(R.id.btn_chatgpt);
         carregarConteudo();
-
+        configurarAcoesCompartilhamento();
         return root;
+    }
+    private void configurarAcoesCompartilhamento() {
+        // WhatsApp
+        btnWhatsapp.setOnClickListener(v -> compartilharConteudo("com.whatsapp"));
+
+        // WeChat
+        btnWechat.setOnClickListener(v -> compartilharConteudo("com.tencent.mm"));
+
+        // ChatGPT (Supondo que o pacote seja válido)
+        btnChatgpt.setOnClickListener(v -> compartilharConteudo("com.openai.chatgpt"));
+    }
+    private MaterialButton btnWhatsapp, btnWechat, btnChatgpt;
+    private void compartilharConteudo(String pacoteApp) {
+        try {
+            String texto = txtTitulo.getText() + "\n\n" + txtConteudo.getText().toString();
+            Intent intent = new Intent(Intent.ACTION_SEND);
+            intent.setType("text/plain");
+            intent.putExtra(Intent.EXTRA_TEXT, texto);
+            intent.setPackage(pacoteApp);
+
+            if (isAppInstalled(pacoteApp)) {
+                startActivity(intent);
+            } else {
+                // Fallback para compartilhamento genérico
+                Intent shareIntent = Intent.createChooser(intent, "Compartilhar via");
+                startActivity(shareIntent);
+            }
+        } catch (Exception e) {
+            Log.e("Compartilhamento", "Erro: " + e.getMessage());
+        }
+    }
+
+    private boolean isAppInstalled(String packageName) {
+        try {
+            requireContext().getPackageManager().getApplicationInfo(packageName, 0);
+            return true;
+        } catch (PackageManager.NameNotFoundException e) {
+            return false;
+        }
     }
 
     private void carregarConteudo() {
@@ -98,7 +142,7 @@ public class MateriadeProva extends Fragment {
             txtConteudo.setText(sp);
             txtConteudo.setLineSpacing(8, 1.0f);
             txtConteudo.setMovementMethod(android.text.method.LinkMovementMethod.getInstance());
-
+            barraCompartilhamento.setVisibility(View.VISIBLE);
             txtTitulo.setVisibility(View.VISIBLE);
             txtConteudo.setVisibility(View.VISIBLE);
             txtErro.setVisibility(View.GONE);
@@ -169,6 +213,7 @@ public class MateriadeProva extends Fragment {
         txtErro.setVisibility(View.VISIBLE);
         txtTitulo.setVisibility(View.GONE);
         txtConteudo.setVisibility(View.GONE);
+        barraCompartilhamento.setVisibility(View.GONE);
     }
 
     private static class CacheHelper {

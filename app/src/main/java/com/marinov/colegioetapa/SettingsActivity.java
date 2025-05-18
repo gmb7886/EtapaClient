@@ -109,12 +109,12 @@ public class SettingsActivity extends AppCompatActivity {
         btnReddit.setOnClickListener(v -> openUrl("https://www.reddit.com/user/GMB7886/"));
         btnGithub.setOnClickListener(v -> openUrl("https://github.com/gmb7886/"));
         btnYoutube.setOnClickListener(v -> openUrl("https://youtube.com/@CanalDoMarinov"));
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
             btnCheck.setEnabled(false);
             btnCheck.setAlpha(0.5f);
             Toast.makeText(
                     this,
-                    "Função de atualização disponível a partir do Android 7.0",
+                    "Função de atualização OTA disponível a partir do Android 12.0 ou superior",
                     Toast.LENGTH_LONG
             ).show();
         } else {

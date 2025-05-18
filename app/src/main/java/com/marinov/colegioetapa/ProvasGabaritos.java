@@ -33,6 +33,7 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
+import android.widget.Toast;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
@@ -82,7 +83,16 @@ public class ProvasGabaritos extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) { // Android 11 ou inferior
+            Toast.makeText(requireContext(),
+                    "Função disponível somente em Android 12 ou superior",
+                    Toast.LENGTH_LONG).show();
 
+            // Opcional: Esconder WebView e mostrar estado de incompatibilidade
+            webView = view.findViewById(R.id.webview);
+            webView.setVisibility(View.GONE);
+            return view; // Retorna sem inicializar o WebView
+        }
         layoutSemInternet = view.findViewById(R.id.layout_sem_internet);
         btnTentarNovamente = view.findViewById(R.id.btn_tentar_novamente);
         webView = view.findViewById(R.id.webview);
