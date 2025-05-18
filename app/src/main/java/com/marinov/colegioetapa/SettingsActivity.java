@@ -2,10 +2,6 @@ package com.marinov.colegioetapa;
 
 import android.annotation.SuppressLint;
 import android.app.DownloadManager;
-import android.content.BroadcastReceiver;
-import android.content.Context;
-import android.content.Intent;
-import android.content.IntentFilter;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
@@ -15,23 +11,23 @@ import android.os.Environment;
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
+import android.webkit.URLUtil;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.Button;
 import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
-import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 
 import com.google.android.material.color.MaterialColors;
 
-import org.json.JSONArray;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
-import java.io.File;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -40,7 +36,6 @@ import java.util.stream.Collectors;
 
 public class SettingsActivity extends AppCompatActivity {
     private static final String TAG = "SettingsActivity";
-    private BroadcastReceiver downloadReceiver;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -68,7 +63,7 @@ public class SettingsActivity extends AppCompatActivity {
             WindowInsetsControllerCompat insetsController =
                     ViewCompat.getWindowInsetsController(getWindow().getDecorView());
             if (insetsController != null) {
-                insetsController.setAppearanceLightStatusBars(!isDarkMode());
+                insetsController.setAppearanceLightStatusBars(isDarkMode());
             }
         } else {
             int statusBarColor = MaterialColors.getColor(
@@ -77,7 +72,7 @@ public class SettingsActivity extends AppCompatActivity {
                     Color.BLACK
             );
             getWindow().setStatusBarColor(statusBarColor);
-            if (!isDarkMode() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            if (isDarkMode() && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 getWindow().getDecorView()
                         .setSystemUiVisibility(View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR);
             }
@@ -104,7 +99,6 @@ public class SettingsActivity extends AppCompatActivity {
         Button btnCheck = findViewById(R.id.btn_check_update);
         Button btnClear = findViewById(R.id.btn_clear_data);
 
-        // Desabilita verificação em Android ≤ 6.0
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.M) {
             btnCheck.setEnabled(false);
             btnCheck.setAlpha(0.5f);
@@ -117,10 +111,9 @@ public class SettingsActivity extends AppCompatActivity {
             btnCheck.setOnClickListener(v -> checkUpdate());
         }
 
-        // Limpar dados: remove todos os cookies do WebView
         btnClear.setOnClickListener(v -> {
             CookieManager cm = CookieManager.getInstance();
-            cm.removeAllCookies(success -> { /* opcional */ });
+            cm.removeAllCookies(success -> {});
             cm.flush();
             Toast.makeText(this, "Base de dados apagada com sucesso!", Toast.LENGTH_SHORT).show();
         });
@@ -134,36 +127,26 @@ public class SettingsActivity extends AppCompatActivity {
 
     private boolean isDarkMode() {
         return (getResources().getConfiguration().uiMode &
-                Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES;
+                Configuration.UI_MODE_NIGHT_MASK) != Configuration.UI_MODE_NIGHT_YES;
     }
 
-    /** Consulta GitHub Releases para nova versão */
     private void checkUpdate() {
         new Thread(() -> {
             try {
-                URL url = new URL(
-                        "https://api.github.com/repos/gmb7886/EtapaClient/releases/latest"
-                );
+                URL url = new URL("https://api.github.com/repos/gmb7886/EtapaClient/releases/latest");
                 HttpURLConnection conn = (HttpURLConnection) url.openConnection();
                 conn.setRequestMethod("GET");
                 conn.setRequestProperty("Accept", "application/vnd.github.v3+json");
                 conn.setRequestProperty("User-Agent", "EtapaClient-Android");
                 conn.setConnectTimeout(10000);
-                conn.setReadTimeout(15000);
 
-                int code = conn.getResponseCode();
-                if (code == HttpURLConnection.HTTP_FORBIDDEN) {
-                    showError("Limite de requisições excedido. Tente mais tarde.");
-                    return;
-                } else if (code != HttpURLConnection.HTTP_OK) {
-                    showError("Erro na conexão: Código " + code);
-                    return;
+                if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
+                    String json = readResponseStream(conn);
+                    JSONObject release = new JSONObject(json);
+                    processReleaseData(release);
+                } else {
+                    showError("Erro na conexão: Código " + conn.getResponseCode());
                 }
-
-                String json = readResponseStream(conn);
-                JSONObject release = new JSONObject(json);
-                processReleaseData(release);
-
             } catch (Exception e) {
                 Log.e(TAG, "Erro na verificação", e);
                 showError("Erro: " + e.getMessage());
@@ -184,98 +167,53 @@ public class SettingsActivity extends AppCompatActivity {
 
         if (latest.equals(current)) {
             showMessage();
-            return;
-        }
-
-        JSONArray assets = release.getJSONArray("assets");
-        String downloadUrl = null;
-        for (int i = 0; i < assets.length(); i++) {
-            JSONObject asset = assets.getJSONObject(i);
-            String name = asset.getString("name");
-            if (name.startsWith("app") && name.endsWith(".apk")) {
-                downloadUrl = asset.getString("browser_download_url");
-                break;
-            }
-        }
-
-        if (downloadUrl == null) {
-            showError("APK não encontrado no release");
         } else {
-            promptForUpdate(downloadUrl);
+            String releaseUrl = release.getString("html_url");
+            promptForUpdate(releaseUrl);
         }
     }
 
     private void promptForUpdate(String url) {
         runOnUiThread(() -> new AlertDialog.Builder(this)
-                .setTitle("Nova versão disponível")
-                .setMessage("Deseja atualizar agora?")
-                .setPositiveButton("Atualizar", (d, w) -> downloadAndInstall(url))
-                .setNegativeButton("Cancelar", null)
-                .show()
-        );
+                .setTitle("Atualização Disponível")
+                .setMessage("Deseja atualizar?")
+                .setPositiveButton("Sim", (dialog, which) -> showWebView(url))
+                .setNegativeButton("Não", null)
+                .show());
     }
 
-    @SuppressLint("UnspecifiedRegisterReceiverFlag")
-    private void downloadAndInstall(String url) {
-        try {
+    @SuppressLint("SetJavaScriptEnabled")
+    private void showWebView(String url) {
+        WebView webView = new WebView(this);
+        webView.getSettings().setJavaScriptEnabled(true);
+        webView.getSettings().setDomStorageEnabled(true);
+
+        webView.setWebViewClient(new WebViewClient());
+        webView.setDownloadListener((downloadUrl, userAgent, contentDisposition, mimeType, contentLength) -> {
+            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
+            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
+            String fileName = URLUtil.guessFileName(downloadUrl, contentDisposition, mimeType);
+            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
+
             DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-            DownloadManager.Request req = new DownloadManager.Request(Uri.parse(url));
-            File dest = new File(
-                    getExternalFilesDir(Environment.DIRECTORY_DOWNLOADS),
-                    "etapa_update.apk"
-            );
-            req.setDestinationUri(Uri.fromFile(dest))
-                    .setNotificationVisibility(
-                            DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED
-                    );
-            long id = dm.enqueue(req);
+            dm.enqueue(request);
 
-            // Receiver para instalar ao concluir download
-            downloadReceiver = new BroadcastReceiver() {
-                @Override
-                public void onReceive(Context ctx, Intent intent) {
-                    long rid = intent.getLongExtra(
-                            DownloadManager.EXTRA_DOWNLOAD_ID, -1
-                    );
-                    if (rid == id) {
-                        installApk(dest);
-                        unregisterReceiver(this);
-                    }
-                }
-            };
-            registerReceiver(
-                    downloadReceiver,
-                    new IntentFilter(DownloadManager.ACTION_DOWNLOAD_COMPLETE)
-            );
-        } catch (Exception e) {
-            Log.e(TAG, "Erro no download", e);
-            showError("Falha no download: " + e.getMessage());
-        }
-    }
+            Toast.makeText(this, "Download iniciado, isso pode demorar um pouco: " + fileName, Toast.LENGTH_SHORT).show();
+        });
 
-    private void installApk(File apk) {
-        try {
-            Uri uri = FileProvider.getUriForFile(
-                    this,
-                    BuildConfig.APPLICATION_ID + ".provider",
-                    apk
-            );
-            Intent i = new Intent(Intent.ACTION_INSTALL_PACKAGE);
-            i.setData(uri);
-            i.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
-            startActivity(i);
-        } catch (Exception e) {
-            Log.e(TAG, "Erro na instalação", e);
-            showError("Erro na instalação: " + e.getMessage());
-        }
+        new AlertDialog.Builder(this)
+                .setView(webView)
+                .setNegativeButton("Fechar", (d, w) -> d.dismiss())
+                .show();
+
+        webView.loadUrl(url);
     }
 
     private void showMessage() {
         runOnUiThread(() -> new AlertDialog.Builder(this)
                 .setMessage("Você já está na versão mais recente")
                 .setPositiveButton("OK", null)
-                .show()
-        );
+                .show());
     }
 
     private void showError(String msg) {
@@ -283,17 +221,6 @@ public class SettingsActivity extends AppCompatActivity {
                 .setTitle("Erro")
                 .setMessage(msg)
                 .setPositiveButton("OK", null)
-                .show()
-        );
-    }
-
-    @Override
-    protected void onDestroy() {
-        super.onDestroy();
-        if (downloadReceiver != null) {
-            try {
-                unregisterReceiver(downloadReceiver);
-            } catch (IllegalArgumentException ignored) { }
-        }
+                .show());
     }
 }
