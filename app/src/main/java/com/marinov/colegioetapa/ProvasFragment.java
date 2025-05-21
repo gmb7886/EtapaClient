@@ -25,6 +25,7 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.widget.SearchView;
@@ -32,6 +33,7 @@ import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 import com.google.android.material.progressindicator.CircularProgressIndicator;
 
@@ -50,6 +52,7 @@ import java.util.stream.Collectors;
 
 public class ProvasFragment extends Fragment {
     private static final String TAG = "ProvasFragment";
+    private OnBackPressedCallback onBackPressedCallback;
     private SearchView searchView;
     private RecyclerView recyclerProvas;
     private CircularProgressIndicator progressBar;
@@ -147,7 +150,40 @@ public class ProvasFragment extends Fragment {
         });
         authCheckWebView.loadUrl("https://areaexclusiva.colegioetapa.com.br/provas/notas");
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
+        onBackPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (!currentPath.isEmpty()) {
+                    // Voltar para a pasta pai
+                    currentPath = getParentPath(currentPath);
+                    startFetch();
+                } else {
+                    // Se estiver na raiz, navegar para o HomeFragment
+                    navigateToHomeFragment();
+                    setEnabled(false); // Opcional, dependendo do fluxo
+                }
+            }
+        };
+
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                onBackPressedCallback
+        );
+    }
+
+    // Método para navegar ao HomeFragment
+    private void navigateToHomeFragment() {
+        BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+        bottomNav.setSelectedItemId(R.id.navigation_home);
+    }
+    private String getParentPath(String path) {
+        int lastSlash = path.lastIndexOf('/');
+        return (lastSlash == -1) ? "" : path.substring(0, lastSlash);
+    }
     private void showNoInternetUI() {
         recyclerProvas.setVisibility(View.GONE);
         searchView.setVisibility(View.GONE);

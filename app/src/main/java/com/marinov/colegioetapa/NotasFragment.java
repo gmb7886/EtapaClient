@@ -16,6 +16,8 @@ import android.widget.LinearLayout;
 import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
+
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -32,6 +34,7 @@ public class NotasFragment extends Fragment {
     private TableLayout tableNotas;
     private LinearLayout barOffline;
     private CacheHelper cache;
+    private OnBackPressedCallback onBackPressedCallback;
 
     @Nullable
     @Override
@@ -101,7 +104,26 @@ public class NotasFragment extends Fragment {
             }
         }
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
+        // Configurar o callback do botão voltar
+        onBackPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Simula um clique no item "Início" da BottomNavigation
+                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+                bottomNav.setSelectedItemId(R.id.navigation_home);
+            }
+        };
+
+        // Registrar o callback no dispatcher
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                onBackPressedCallback
+        );
+    }
     private void parseAndBuildTable(Element table) {
         tableNotas.removeAllViews();
         int colorDefault = ContextCompat.getColor(requireContext(), R.color.colorOnSurface);

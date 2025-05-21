@@ -35,6 +35,7 @@ import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
 import android.widget.Toast;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.annotation.RequiresPermission;
@@ -59,6 +60,8 @@ import java.util.concurrent.Executors;
 
 public class AccFragment extends Fragment {
     public static final String URL = "https://areaexclusiva.colegioetapa.com.br/acc/detalhes";
+    private OnBackPressedCallback onBackPressedCallback;
+
     private static final String PREFS_NAME = "app_prefs";
     private static final String KEY_ASKED_STORAGE = "asked_storage";
     private static final int REQUEST_STORAGE_PERMISSION = 1001;
@@ -171,7 +174,30 @@ public class AccFragment extends Fragment {
 
         configureDownloadListener();
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
+        // Configurar o callback do botão voltar
+        onBackPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (webView != null && webView.canGoBack()) {
+                    webView.goBack(); // Retrocede no WebView
+                } else {
+                    // Remove o callback e executa o comportamento padrão
+                    setEnabled(false);
+                    requireActivity().onBackPressed();
+                }
+            }
+        };
+
+        // Registrar o callback no dispatcher
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                onBackPressedCallback
+        );
+    }
     private void applyWebViewDarkMode(WebSettings settings) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
                 && WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {

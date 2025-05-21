@@ -16,6 +16,7 @@ import android.widget.TableLayout;
 import android.widget.TableRow;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.core.content.ContextCompat;
@@ -34,6 +35,8 @@ public class HorariosAula extends Fragment {
     private static final String URL_HORARIOS = "https://areaexclusiva.colegioetapa.com.br/horarios/aulas";
     private TableLayout tableHorarios;
     private LinearLayout barOffline;
+    private OnBackPressedCallback onBackPressedCallback;
+
     private CacheHelper cache;
     private MaterialButton btnLogin;
     @Nullable
@@ -56,7 +59,26 @@ public class HorariosAula extends Fragment {
 
         return root;
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
+        // Configurar o callback do botão voltar
+        onBackPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                // Simula um clique no item "Início" da BottomNavigation
+                BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+                bottomNav.setSelectedItemId(R.id.navigation_home);
+            }
+        };
+
+        // Registrar o callback no dispatcher
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                onBackPressedCallback
+        );
+    }
     private class FetchHorariosTask extends AsyncTask<String, Void, Document> {
         @Override
         protected Document doInBackground(String... urls) {

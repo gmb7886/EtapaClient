@@ -33,6 +33,7 @@ import android.webkit.WebViewClient;
 import android.widget.FrameLayout;
 import android.widget.LinearLayout;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.appcompat.app.AlertDialog;
@@ -48,7 +49,7 @@ public class EADFragment extends Fragment {
     private static final String KEY_ASKED_STORAGE = "asked_storage";
     private static final String KEY_SHOW_WARNING = "show_warning";
     private static final int REQUEST_STORAGE_PERMISSION = 1001;
-
+    private OnBackPressedCallback onBackPressedCallback;
     private WebView webView;
     private FrameLayout fullscreenContainer;
     private WebChromeClient.CustomViewCallback customViewCallback;
@@ -99,7 +100,30 @@ public class EADFragment extends Fragment {
                 .setCancelable(false)
                 .show();
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
+        // Configurar o callback do botão voltar
+        onBackPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (webView != null && webView.canGoBack()) {
+                    webView.goBack(); // Retrocede no WebView
+                } else {
+                    // Remove o callback e executa o comportamento padrão
+                    setEnabled(false);
+                    requireActivity().onBackPressed();
+                }
+            }
+        };
+
+        // Registrar o callback no dispatcher
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                onBackPressedCallback
+        );
+    }
     @SuppressLint("SetJavaScriptEnabled")
     private void checkAuthentication() {
         WebView authCheckWebView = new WebView(requireContext());

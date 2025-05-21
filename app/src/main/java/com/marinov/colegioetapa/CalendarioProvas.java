@@ -16,6 +16,7 @@ import android.widget.ArrayAdapter;
 import android.widget.Spinner;
 import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
 import androidx.fragment.app.Fragment;
@@ -46,6 +47,8 @@ public class CalendarioProvas extends Fragment {
     private ProvasAdapter adapter;
     private CacheHelper cache;
     private Spinner spinnerMes;
+    private OnBackPressedCallback onBackPressedCallback;
+
     private int mesSelecionado = 0;
 
     @Nullable
@@ -77,7 +80,23 @@ public class CalendarioProvas extends Fragment {
 
         return root;
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
+        onBackPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                    BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+                    bottomNav.setSelectedItemId(R.id.navigation_home);
+            }
+        };
+
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                onBackPressedCallback
+        );
+    }
     private void setupRecyclerView() {
         recyclerProvas.setLayoutManager(new LinearLayoutManager(getContext()));
         adapter = new ProvasAdapter(new ArrayList<>(), this);
