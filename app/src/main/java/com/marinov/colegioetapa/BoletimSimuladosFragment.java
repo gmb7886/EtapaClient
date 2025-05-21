@@ -109,9 +109,9 @@ public class BoletimSimuladosFragment extends Fragment {
                 if (webView != null && webView.canGoBack()) {
                     webView.goBack(); // Retrocede no WebView
                 } else {
-                    // Remove o callback e executa o comportamento padrão
-                    setEnabled(false);
-                    requireActivity().onBackPressed();
+                    // Navega para o HomeFragment via BottomNavigation
+                    BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+                    bottomNav.setSelectedItemId(R.id.navigation_home);
                 }
             }
         };
