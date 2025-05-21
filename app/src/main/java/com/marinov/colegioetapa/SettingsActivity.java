@@ -1,15 +1,20 @@
 package com.marinov.colegioetapa;
 
 import android.annotation.SuppressLint;
-import android.app.DownloadManager;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
 import android.content.Intent;
-import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
 import android.content.res.Configuration;
 import android.graphics.Color;
 import android.net.Uri;
+import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
@@ -21,15 +26,17 @@ import android.widget.Toast;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
+import androidx.core.app.ActivityCompat;
+import androidx.core.app.NotificationCompat;
+import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
-
 import com.google.android.material.color.MaterialColors;
-
 import org.json.JSONObject;
-
 import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.net.HttpURLConnection;
@@ -38,6 +45,8 @@ import java.util.stream.Collectors;
 
 public class SettingsActivity extends AppCompatActivity {
     private static final String TAG = "SettingsActivity";
+    private static final int DOWNLOAD_NOTIFICATION_ID = 1000;
+    private static final int INSTALL_NOTIFICATION_ID = 1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -54,7 +63,6 @@ public class SettingsActivity extends AppCompatActivity {
         if (getSupportActionBar() != null) {
             getSupportActionBar().setDisplayHomeAsUpEnabled(true);
         }
-
         configureStatusBar();
         setupToolbarInsets();
     }
@@ -80,6 +88,7 @@ public class SettingsActivity extends AppCompatActivity {
             }
         }
     }
+
     private void setupToolbarInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(
                 findViewById(R.id.toolbar),
@@ -104,12 +113,12 @@ public class SettingsActivity extends AppCompatActivity {
         Button btnGithub = findViewById(R.id.btn_github);
         Button btnYoutube = findViewById(R.id.btn_youtube);
 
-
         btnTwitter.setOnClickListener(v -> openUrl("http://x.com/gmb7886"));
         btnReddit.setOnClickListener(v -> openUrl("https://www.reddit.com/user/GMB7886/"));
         btnGithub.setOnClickListener(v -> openUrl("https://github.com/gmb7886/"));
         btnYoutube.setOnClickListener(v -> openUrl("https://youtube.com/@CanalDoMarinov"));
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) {
+
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
             btnCheck.setEnabled(false);
             btnCheck.setAlpha(0.5f);
             Toast.makeText(
@@ -122,35 +131,41 @@ public class SettingsActivity extends AppCompatActivity {
         }
 
         btnClear.setOnClickListener(v -> {
-            CookieManager cm = CookieManager.getInstance();
-            cm.removeAllCookies(success -> {});
-            cm.flush();
+            CookieManager.getInstance().removeAllCookies(null);
+            CookieManager.getInstance().flush();
             clearAllCacheData();
             Toast.makeText(this, "Base de dados apagada com sucesso!", Toast.LENGTH_SHORT).show();
         });
     }
+
     private void clearAllCacheData() {
-        SharedPreferences horariosPrefs = getSharedPreferences("horarios_prefs", MODE_PRIVATE);
-        horariosPrefs.edit().clear().apply();
+        clearSharedPreferences("horarios_prefs");
+        clearSharedPreferences("calendario_prefs");
+        clearSharedPreferences("materia_cache");
+        clearSharedPreferences("notas_prefs");
 
-        SharedPreferences calendarioPrefs = getSharedPreferences("calendario_prefs", MODE_PRIVATE);
-        calendarioPrefs.edit().clear().apply();
-
-        SharedPreferences materiaPrefs = getSharedPreferences("materia_cache", MODE_PRIVATE);
-        materiaPrefs.edit().clear().apply();
-
-        SharedPreferences notasPrefs = getSharedPreferences("notas_prefs", MODE_PRIVATE);
-        notasPrefs.edit().clear().apply();
+        // Limpar downloads antigos
+        File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+        File[] files = downloadsDir.listFiles((dir, name) -> name.endsWith(".apk"));
+        if (files != null) {
+            for (File file : files) {
+                file.delete();
+            }
+        }
     }
+
+    private void clearSharedPreferences(String name) {
+        getSharedPreferences(name, MODE_PRIVATE).edit().clear().apply();
+    }
+
     private void openUrl(String url) {
         try {
-            Intent intent = new Intent(Intent.ACTION_VIEW);
-            intent.setData(Uri.parse(url));
-            startActivity(intent);
+            startActivity(new Intent(Intent.ACTION_VIEW, Uri.parse(url)));
         } catch (Exception e) {
             Log.e(TAG, "Erro ao abrir URL", e);
         }
     }
+
     @Override
     public boolean onSupportNavigateUp() {
         finish();
@@ -173,9 +188,7 @@ public class SettingsActivity extends AppCompatActivity {
                 conn.setConnectTimeout(10000);
 
                 if (conn.getResponseCode() == HttpURLConnection.HTTP_OK) {
-                    String json = readResponseStream(conn);
-                    JSONObject release = new JSONObject(json);
-                    processReleaseData(release);
+                    processReleaseData(new JSONObject(readResponseStream(conn)));
                 } else {
                     showError("Erro na conexão: Código " + conn.getResponseCode());
                 }
@@ -195,13 +208,10 @@ public class SettingsActivity extends AppCompatActivity {
 
     private void processReleaseData(JSONObject release) throws Exception {
         String latest = release.getString("tag_name");
-        String current = BuildConfig.VERSION_NAME;
-
-        if (latest.equals(current)) {
+        if (latest.equals(BuildConfig.VERSION_NAME)) {
             showMessage();
         } else {
-            String releaseUrl = release.getString("html_url");
-            promptForUpdate(releaseUrl);
+            promptForUpdate(release.getString("html_url"));
         }
     }
 
@@ -209,7 +219,7 @@ public class SettingsActivity extends AppCompatActivity {
         runOnUiThread(() -> new AlertDialog.Builder(this)
                 .setTitle("Atualização Disponível")
                 .setMessage("Deseja atualizar?")
-                .setPositiveButton("Sim", (dialog, which) -> showWebView(url))
+                .setPositiveButton("Sim", (d, w) -> showWebView(url))
                 .setNegativeButton("Não", null)
                 .show());
     }
@@ -218,19 +228,15 @@ public class SettingsActivity extends AppCompatActivity {
     private void showWebView(String url) {
         WebView webView = new WebView(this);
         webView.getSettings().setJavaScriptEnabled(true);
-        webView.getSettings().setDomStorageEnabled(true);
-
-        webView.setWebViewClient(new WebViewClient());
-        webView.setDownloadListener((downloadUrl, userAgent, contentDisposition, mimeType, contentLength) -> {
-            DownloadManager.Request request = new DownloadManager.Request(Uri.parse(downloadUrl));
-            request.setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED);
-            String fileName = URLUtil.guessFileName(downloadUrl, contentDisposition, mimeType);
-            request.setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, fileName);
-
-            DownloadManager dm = (DownloadManager) getSystemService(DOWNLOAD_SERVICE);
-            dm.enqueue(request);
-
-            Toast.makeText(this, "Download iniciado, isso pode demorar um pouco: " + fileName, Toast.LENGTH_SHORT).show();
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public boolean shouldOverrideUrlLoading(WebView view, String url) {
+                if (url.endsWith(".apk")) {
+                    startManualDownload(url);
+                    return true;
+                }
+                return super.shouldOverrideUrlLoading(view, url);
+            }
         });
 
         new AlertDialog.Builder(this)
@@ -239,6 +245,145 @@ public class SettingsActivity extends AppCompatActivity {
                 .show();
 
         webView.loadUrl(url);
+    }
+
+    private void startManualDownload(String apkUrl) {
+        new DownloadTask().execute(apkUrl);
+    }
+
+    @SuppressLint("StaticFieldLeak")
+    private class DownloadTask extends AsyncTask<String, Integer, File> {
+        private NotificationManager notificationManager;
+        private NotificationCompat.Builder builder;
+
+        @Override
+        protected void onPreExecute() {
+            checkNotificationPermission();
+            notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+            builder = new NotificationCompat.Builder(SettingsActivity.this, "update_channel")
+                    .setContentTitle("Baixando atualização")
+                    .setSmallIcon(R.drawable.ic_download)
+                    .setPriority(NotificationCompat.PRIORITY_HIGH)
+                    .setOngoing(true)
+                    .setAutoCancel(false);
+            createNotificationChannel();
+            notificationManager.notify(DOWNLOAD_NOTIFICATION_ID, builder.build());
+        }
+
+        @Override
+        protected File doInBackground(String... urls) {
+            try {
+                URL url = new URL(urls[0]);
+                HttpURLConnection connection = (HttpURLConnection) url.openConnection();
+                connection.connect();
+
+                File outputFile = new File(
+                        Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
+                        URLUtil.guessFileName(urls[0], null, null)
+                );
+
+                try (InputStream input = connection.getInputStream();
+                     FileOutputStream output = new FileOutputStream(outputFile)) {
+
+                    byte[] buffer = new byte[4096];
+                    int bytesRead;
+                    long total = 0;
+                    long fileLength = connection.getContentLength();
+
+                    while ((bytesRead = input.read(buffer)) != -1) {
+                        output.write(buffer, 0, bytesRead);
+                        total += bytesRead;
+                        if (fileLength > 0) {
+                            publishProgress((int) (total * 100 / fileLength));
+                        }
+                    }
+                }
+                return outputFile;
+            } catch (Exception e) {
+                Log.e(TAG, "Download error", e);
+                return null;
+            }
+        }
+
+        @Override
+        protected void onProgressUpdate(Integer... progress) {
+            builder.setProgress(100, progress[0], false)
+                    .setContentText(progress[0] + "% concluído");
+            notificationManager.notify(DOWNLOAD_NOTIFICATION_ID, builder.build());
+        }
+
+        @Override
+        protected void onPostExecute(File apkFile) {
+            notificationManager.cancel(DOWNLOAD_NOTIFICATION_ID);
+            new Handler(Looper.getMainLooper()).postDelayed(() -> {
+                if (apkFile != null && apkFile.exists()) {
+                    showInstallNotification(apkFile);
+                } else {
+                    showError("Falha no download");
+                }
+            }, 1000);
+        }
+
+        private void createNotificationChannel() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                NotificationChannel channel = new NotificationChannel(
+                        "update_channel",
+                        "Atualizações",
+                        NotificationManager.IMPORTANCE_HIGH
+                );
+                channel.setDescription("Notificações de atualização do app");
+                channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
+                notificationManager.createNotificationChannel(channel);
+            }
+        }
+
+        private void checkNotificationPermission() {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
+                    checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
+                ActivityCompat.requestPermissions(
+                        SettingsActivity.this,
+                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
+                        100
+                );
+            }
+        }
+    }
+
+    private void showInstallNotification(File apkFile) {
+        try {
+            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
+
+            Uri apkUri = FileProvider.getUriForFile(
+                    this,
+                    BuildConfig.APPLICATION_ID + ".provider",
+                    apkFile
+            );
+
+            Intent installIntent = new Intent(Intent.ACTION_VIEW)
+                    .setDataAndType(apkUri, "application/vnd.android.package-archive")
+                    .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
+
+            PendingIntent pendingIntent = PendingIntent.getActivity(
+                    this,
+                    0,
+                    installIntent,
+                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+            );
+
+            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "update_channel")
+                    .setContentTitle("Atualização pronta")
+                    .setContentText("Toque para instalar")
+                    .setSmallIcon(R.drawable.ic_download_complete)
+                    .setContentIntent(pendingIntent)
+                    .setAutoCancel(true)
+                    .setBadgeIconType(NotificationCompat.BADGE_ICON_SMALL);
+
+            notificationManager.notify(INSTALL_NOTIFICATION_ID, builder.build());
+        } catch (IllegalArgumentException e) {
+            Log.e(TAG, "Erro na notificação de instalação", e);
+            showError("Erro na instalação: " + e.getMessage());
+        }
     }
 
     private void showMessage() {

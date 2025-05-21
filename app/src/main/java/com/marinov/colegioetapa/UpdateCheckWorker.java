@@ -16,7 +16,7 @@ import androidx.work.Worker;
 import androidx.work.WorkerParameters;
 
 public class UpdateCheckWorker extends Worker {
-    private static final String CHANNEL_ID = "Atualizações do app";
+    private static final String CHANNEL_ID = "update_channel";
     private static final int NOTIFICATION_ID = 1001;
 
     public UpdateCheckWorker(@NonNull Context context, @NonNull WorkerParameters params) {
