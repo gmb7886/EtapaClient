@@ -48,6 +48,11 @@ public class UpdateCheckWorker extends Worker {
 
         Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+            intent.putExtra("open_update_directly", true);
+        }
+
         PendingIntent pendingIntent = PendingIntent.getActivity(
                 getApplicationContext(),
                 0,

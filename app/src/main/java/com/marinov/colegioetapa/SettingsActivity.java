@@ -55,6 +55,10 @@ public class SettingsActivity extends AppCompatActivity {
 
         setupToolbar();
         setupUI();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
+                && getIntent().getBooleanExtra("open_update_directly", false)) {
+            checkUpdate();
+        }
     }
 
     private void setupToolbar() {
@@ -226,7 +230,9 @@ public class SettingsActivity extends AppCompatActivity {
 
     @SuppressLint("SetJavaScriptEnabled")
     private void showWebView(String url) {
-        WebView webView = new WebView(this);
+        View content = getLayoutInflater().inflate(R.layout.dialog_webview, null, false);
+        WebView webView = content.findViewById(R.id.dialog_webview);
+
         webView.getSettings().setJavaScriptEnabled(true);
         webView.setWebViewClient(new WebViewClient() {
             @Override
@@ -240,8 +246,8 @@ public class SettingsActivity extends AppCompatActivity {
         });
 
         new AlertDialog.Builder(this)
-                .setView(webView)
-                .setNegativeButton("Fechar", (d, w) -> d.dismiss())
+                .setView(content)
+                .setNegativeButton("Fechar", (dialog, which) -> dialog.dismiss())
                 .show();
 
         webView.loadUrl(url);

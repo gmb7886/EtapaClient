@@ -75,16 +75,15 @@
             </intent-filter>
         </activity>
 
-        <!-- Outras Activities -->
-        <activity
-            android:name=".ProvasActivity"
-            android:exported="false" />
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
-            android:theme="@style/Theme.ColégioEtapa"/>
+            android:theme="@style/Theme.ColégioEtapa"
+            android:launchMode="singleTop" />
+        <activity
+            android:name=".ProvasActivity"
+            android:exported="false" />
 
-        <!-- FileProvider para instalação de APKs -->
         <provider
             android:name="androidx.core.content.FileProvider"
             android:authorities="${applicationId}.provider"
