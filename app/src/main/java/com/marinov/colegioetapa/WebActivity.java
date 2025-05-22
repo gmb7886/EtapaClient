@@ -79,7 +79,7 @@ public class WebActivity extends AppCompatActivity {
 
         // Carrega a URL passada ou a padrão
         String url = getIntent().getStringExtra(EXTRA_URL);
-        webView.loadUrl(Objects.requireNonNullElse(url, HomeFragment.URL));
+        //webView.loadUrl(Objects.requireNonNullElse(url, HomeFragment.URL));
     }
 
     @Override

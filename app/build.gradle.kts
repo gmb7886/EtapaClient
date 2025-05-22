@@ -12,7 +12,7 @@ android {
         minSdk = 21
         targetSdk = 35
         versionCode = 1
-        versionName = "6.4"
+        versionName = "7.0"
         buildConfigField("String", "EAD_URL", "\"${project.properties["EAD_URL"]}\"")
         buildConfigField("String", "GITHUB_PAT", "\"${project.properties["GITHUB_PAT"]}\"")
     }
@@ -64,4 +64,8 @@ dependencies {
     implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
     implementation ("com.squareup.okhttp3:logging-interceptor:4.9.3")
     implementation ("com.google.guava:guava:31.0.1-android")
+    implementation ("com.github.bumptech.glide:glide:4.13.2")
+    implementation ("androidx.navigation:navigation-fragment")
+    implementation ("androidx.navigation:navigation-ui")
+    implementation ("androidx.navigation:navigation-dynamic-features-fragment")
 }
