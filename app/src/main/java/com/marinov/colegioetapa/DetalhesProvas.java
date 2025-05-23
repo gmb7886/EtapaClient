@@ -33,7 +33,6 @@ import android.webkit.WebSettings;
 import android.webkit.WebView;
 import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
-import android.widget.Toast;
 
 import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
@@ -60,9 +59,9 @@ import java.util.concurrent.Executors;
 
 public class DetalhesProvas extends Fragment {
     public static final String URL = "https://areaexclusiva.colegioetapa.com.br/provas/detalhes";
-    private OnBackPressedCallback onBackPressedCallback;
-
     private static final String PREFS_NAME = "app_prefs";
+
+    private OnBackPressedCallback onBackPressedCallback;
     private static final String KEY_ASKED_STORAGE = "asked_storage";
     private static final int REQUEST_STORAGE_PERMISSION = 1001;
 
@@ -86,16 +85,7 @@ public class DetalhesProvas extends Fragment {
                              @Nullable ViewGroup container,
                              @Nullable Bundle savedInstanceState) {
         View view = inflater.inflate(R.layout.fragment_home, container, false);
-        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.R) { // Android 11 ou inferior
-            Toast.makeText(requireContext(),
-                    "Função disponível somente em Android 12 ou superior",
-                    Toast.LENGTH_LONG).show();
 
-            // Opcional: Esconder WebView e mostrar estado de incompatibilidade
-            webView = view.findViewById(R.id.webview);
-            webView.setVisibility(View.GONE);
-            return view; // Retorna sem inicializar o WebView
-        }
         layoutSemInternet = view.findViewById(R.id.layout_sem_internet);
         btnTentarNovamente = view.findViewById(R.id.btn_tentar_novamente);
         webView = view.findViewById(R.id.webview);
@@ -108,7 +98,30 @@ public class DetalhesProvas extends Fragment {
 
         return view;
     }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
 
+        // Configurar o callback do botão voltar
+        onBackPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (webView != null && webView.canGoBack()) {
+                    webView.goBack(); // Retrocede no WebView
+                } else {
+                    // Remove o callback e executa o comportamento padrão
+                    setEnabled(false);
+                    requireActivity().onBackPressed();
+                }
+            }
+        };
+
+        // Registrar o callback no dispatcher
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                onBackPressedCallback
+        );
+    }
     private void createNotificationChannel() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             NotificationChannel channel = new NotificationChannel(
@@ -174,30 +187,7 @@ public class DetalhesProvas extends Fragment {
 
         configureDownloadListener();
     }
-    @Override
-    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
 
-        // Configurar o callback do botão voltar
-        onBackPressedCallback = new OnBackPressedCallback(true) {
-            @Override
-            public void handleOnBackPressed() {
-                if (webView != null && webView.canGoBack()) {
-                    webView.goBack(); // Retrocede no WebView
-                } else {
-                    // Navega para o HomeFragment via BottomNavigation
-                    BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
-                    bottomNav.setSelectedItemId(R.id.navigation_home);
-                }
-            }
-        };
-
-        // Registrar o callback no dispatcher
-        requireActivity().getOnBackPressedDispatcher().addCallback(
-                getViewLifecycleOwner(),
-                onBackPressedCallback
-        );
-    }
     private void applyWebViewDarkMode(WebSettings settings) {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
                 && WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {

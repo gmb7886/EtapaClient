@@ -19,6 +19,4 @@
     <color name="colorSurfaceVariant">@android:color/black</color>
     <color name="md_theme_light_surfaceVariant">#F3EDF7</color>
     <color name="card_stroke_color">#1E88E5</color>
-    <color name="outline">#79747E</color> <!-- Cinza médio para contornos -->
-    <color name="surface_container">#F3EDF7</color> <!-- Tom suave para containers -->
 </resources>

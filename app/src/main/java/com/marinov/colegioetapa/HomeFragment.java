@@ -1,339 +1,416 @@
 package com.marinov.colegioetapa;
 
+import android.Manifest;
+import android.annotation.SuppressLint;
+import android.app.NotificationChannel;
+import android.app.NotificationManager;
+import android.app.PendingIntent;
+import android.content.ContentValues;
 import android.content.Context;
+import android.content.Intent;
+import android.content.SharedPreferences;
+import android.content.pm.PackageManager;
+import android.content.res.Configuration;
 import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
 import android.net.NetworkInfo;
+import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Environment;
+import android.os.Handler;
+import android.os.Looper;
+import android.provider.MediaStore;
 import android.util.Log;
 import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
-import android.widget.ImageView;
+import android.webkit.URLUtil;
+import android.webkit.WebChromeClient;
+import android.webkit.WebResourceError;
+import android.webkit.WebResourceRequest;
+import android.webkit.WebSettings;
+import android.webkit.WebView;
+import android.webkit.WebViewClient;
 import android.widget.LinearLayout;
-import android.widget.TextView;
 
+import androidx.activity.OnBackPressedCallback;
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.annotation.RequiresPermission;
+import androidx.core.app.NotificationCompat;
+import androidx.core.app.NotificationManagerCompat;
+import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager2.widget.ViewPager2;
+import androidx.webkit.WebSettingsCompat;
+import androidx.webkit.WebViewFeature;
 
-import com.bumptech.glide.Glide;
+import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
-
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.HttpURLConnection;
+import java.net.URL;
+import java.util.concurrent.Executors;
 
 public class HomeFragment extends Fragment {
+    public static final String URL = "https://areaexclusiva.colegioetapa.com.br/home";
+    private static final String PREFS_NAME = "app_prefs";
 
-    private ViewPager2 viewPager;
-    private RecyclerView newsRecyclerView;
+    private OnBackPressedCallback onBackPressedCallback;
+    private static final String KEY_ASKED_STORAGE = "asked_storage";
+    private static final int REQUEST_STORAGE_PERMISSION = 1001;
+
+    private static final String CHANNEL_ID = "download_channel";
+    private static final int NOTIFICATION_ID = 1;
+
+    private WebView webView;
     private LinearLayout layoutSemInternet;
     private MaterialButton btnTentarNovamente;
-    private View loadingContainer;
-    private View contentContainer;
 
-    private final List<CarouselItem> carouselItems = new ArrayList<>();
-    private final List<NewsItem> newsItems = new ArrayList<>();
-    private static final String HOME_URL = "https://areaexclusiva.colegioetapa.com.br/home";
-    private static final String OUT_URL = "https://areaexclusiva.colegioetapa.com.br";
+    @Override
+    public void onCreate(@Nullable Bundle savedInstanceState) {
+        super.onCreate(savedInstanceState);
+        createNotificationChannel();
+    }
 
-    private boolean isFragmentDestroyed = false;
-
+    @SuppressLint("MissingPermission")
+    @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container,
-                             Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.home_fragment_new, container, false);
+                             @Nullable ViewGroup container,
+                             @Nullable Bundle savedInstanceState) {
+        View view = inflater.inflate(R.layout.fragment_home, container, false);
+
+        layoutSemInternet = view.findViewById(R.id.layout_sem_internet);
+        btnTentarNovamente = view.findViewById(R.id.btn_tentar_novamente);
+        webView = view.findViewById(R.id.webview);
+
+        if (isOnline()) {
+            initializeWebView(view);
+        } else {
+            showNoInternetUI();
+        }
+
+        return view;
+    }
+    @Override
+    public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
+        super.onViewCreated(view, savedInstanceState);
+
+        // Configurar o callback do botão voltar
+        onBackPressedCallback = new OnBackPressedCallback(true) {
+            @Override
+            public void handleOnBackPressed() {
+                if (webView != null && webView.canGoBack()) {
+                    webView.goBack(); // Retrocede no WebView
+                } else {
+                    // Remove o callback e executa o comportamento padrão
+                    setEnabled(false);
+                    requireActivity().onBackPressed();
+                }
+            }
+        };
+
+        // Registrar o callback no dispatcher
+        requireActivity().getOnBackPressedDispatcher().addCallback(
+                getViewLifecycleOwner(),
+                onBackPressedCallback
+        );
+    }
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Downloads",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+            channel.setDescription("Downloads");
+            NotificationManager manager = requireContext().getSystemService(NotificationManager.class);
+            if (manager != null) manager.createNotificationChannel(channel);
+        }
+    }
+
+    private void navigateToHome() {
+        try {
+            BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+            bottomNav.setSelectedItemId(R.id.navigation_home);
+        } catch (Exception ignored) {}
+    }
+
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    @SuppressLint({"SetJavaScriptEnabled", "WrongConstant"})
+    private void initializeWebView(View view) {
+        webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
+        webView.setVerticalScrollBarEnabled(false);
+        webView.setHorizontalScrollBarEnabled(false);
+        webView.setVisibility(View.INVISIBLE);
+
+        WebSettings settings = webView.getSettings();
+        settings.setJavaScriptEnabled(true);
+        settings.setDomStorageEnabled(true);
+        settings.setLoadWithOverviewMode(true);
+        settings.setUseWideViewPort(true);
+        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        settings.setSupportZoom(false);
+        settings.setBuiltInZoomControls(false);
+        settings.setDisplayZoomControls(false);
+
+        applyWebViewDarkMode(settings);
+        setupWebViewSecurity();
+
+        restoreCookies();
+        checkStoragePermissions();
+        webView.loadUrl(URL);
+
+        webView.setWebChromeClient(new WebChromeClient());
+        webView.setWebViewClient(new WebViewClient() {
+            @Override
+            public void onPageFinished(WebView view, String url) {
+                saveCookies();
+                removeHeader(view);
+                if (isSystemDarkMode()) injectCssDarkMode(view);
+                showWebViewWithAnimation(view);
+                layoutSemInternet.setVisibility(View.GONE);
+            }
+
+            @Override
+            public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
+                super.onReceivedError(view, request, error);
+                if (!isOnline()) showNoInternetUI();
+            }
+        });
+
+        configureDownloadListener();
+    }
+
+    private void applyWebViewDarkMode(WebSettings settings) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q
+                && WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
+            if (isSystemDarkMode()) {
+                WebSettingsCompat.setForceDark(settings, WebSettingsCompat.FORCE_DARK_ON);
+                if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK_STRATEGY)) {
+                    WebSettingsCompat.setForceDarkStrategy(
+                            settings,
+                            WebSettingsCompat.DARK_STRATEGY_WEB_THEME_DARKENING_ONLY
+                    );
+                }
+            } else {
+                WebSettingsCompat.setForceDark(settings, WebSettingsCompat.FORCE_DARK_OFF);
+            }
+        }
+    }
+
+    private void setupWebViewSecurity() {
+        webView.setOnLongClickListener(v -> true);
+        webView.setLongClickable(false);
+        webView.setHapticFeedbackEnabled(false);
+    }
+
+    private boolean isSystemDarkMode() {
+        int uiMode = getResources().getConfiguration().uiMode & Configuration.UI_MODE_NIGHT_MASK;
+        return uiMode == Configuration.UI_MODE_NIGHT_YES;
+    }
+
+    private void removeHeader(WebView view) {
+        String js = "document.documentElement.style.webkitTouchCallout='none';" +
+                "document.documentElement.style.webkitUserSelect='none';" +
+                "var nav=document.querySelector('#page-content-wrapper > nav'); if(nav) nav.remove();" +
+                "var sidebar=document.querySelector('#sidebar-wrapper'); if(sidebar) sidebar.remove();" +
+                "var style=document.createElement('style');" +
+                "style.type='text/css';" +
+                "style.appendChild(document.createTextNode('::-webkit-scrollbar{display:none;}'));" +
+                "document.head.appendChild(style);";
+        view.evaluateJavascript(js, null);
+    }
+
+    private void injectCssDarkMode(WebView view) {
+        String css = "html{filter:invert(1) hue-rotate(180deg)!important; background:#121212!important;}" +
+                "img,picture,video,iframe{filter:invert(1) hue-rotate(180deg)!important;}";
+        String js = "(function(){var style=document.createElement('style'); style.textContent=\"" + css + "\"; document.head.appendChild(style);})();";
+        view.evaluateJavascript(js, null);
+    }
+
+    private void showWebViewWithAnimation(WebView view) {
+        new Handler(Looper.getMainLooper()).postDelayed(() -> {
+            view.setAlpha(0f);
+            view.setVisibility(View.VISIBLE);
+            view.animate().alpha(1f).setDuration(300).start();
+        }, 100);
+    }
+
+    private void showNoInternetUI() {
+        webView.setVisibility(View.GONE);
+        layoutSemInternet.setVisibility(View.VISIBLE);
+        btnTentarNovamente.setOnClickListener(v -> navigateToHome());
+        if (isOnline()) {
+            layoutSemInternet.setVisibility(View.GONE);
+            webView.reload();
+        }
+    }
+
+    private boolean isOnline() {
+        ConnectivityManager cm = (ConnectivityManager) requireContext()
+                .getSystemService(Context.CONNECTIVITY_SERVICE);
+        NetworkInfo netInfo = cm.getActiveNetworkInfo();
+        return netInfo != null && netInfo.isConnected();
+    }
+
+    private void restoreCookies() {/* implementar */}
+    private void saveCookies()   {/* implementar */}
+
+    private void checkStoragePermissions() {
+        SharedPreferences prefs = requireContext()
+                .getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q &&
+                !prefs.getBoolean(KEY_ASKED_STORAGE, false)) {
+            prefs.edit().putBoolean(KEY_ASKED_STORAGE, true).apply();
+            if (ContextCompat.checkSelfPermission(requireContext(),
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE)
+                    != PackageManager.PERMISSION_GRANTED) {
+                requestPermissions(
+                        new String[]{Manifest.permission.WRITE_EXTERNAL_STORAGE},
+                        REQUEST_STORAGE_PERMISSION
+                );
+            }
+        }
+    }
+
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    private void configureDownloadListener() {
+        webView.setDownloadListener((url, ua, cd, mt, cl) -> {
+            if (needsStoragePermission() && !hasStoragePermission()) return;
+            String cookies = CookieManager.getInstance().getCookie(url);
+            String userAgent = webView.getSettings().getUserAgentString();
+            String referer = webView.getUrl();
+            String fileName = URLUtil.guessFileName(url, cd, mt);
+            downloadManualmente(url, fileName, cookies, userAgent, referer, mt);
+        });
+    }
+
+    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
+    private void downloadManualmente(
+            String url,
+            String fileName,
+            String cookies,
+            String userAgent,
+            String referer,
+            @Nullable String mimeType
+    ) {
+        NotificationCompat.Builder notif = new NotificationCompat.Builder(requireContext(), CHANNEL_ID)
+                .setSmallIcon(android.R.drawable.stat_sys_download)
+                .setContentTitle("Download")
+                .setContentText("Baixando " + fileName)
+                .setPriority(NotificationCompat.PRIORITY_LOW)
+                .setOngoing(true);
+        NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build());
+
+        Executors.newSingleThreadExecutor().execute(() -> {
+            InputStream in = null; OutputStream out = null; HttpURLConnection conn = null; Uri targetUri = null;
+            try {
+                URL u = new URL(url);
+                conn = (HttpURLConnection) u.openConnection();
+                conn.setInstanceFollowRedirects(false);
+                conn.setRequestProperty("Cookie", cookies);
+                conn.setRequestProperty("User-Agent", userAgent);
+                conn.setRequestProperty("Referer", referer);
+                conn.connect();
+
+                int code = conn.getResponseCode();
+                if (code / 100 == 3) {
+                    String loc = conn.getHeaderField("Location");
+                    conn.disconnect();
+                    downloadManualmente(loc, fileName, cookies, userAgent, referer, mimeType);
+                    return;
+                }
+                if (code != HttpURLConnection.HTTP_OK) throw new IOException("HTTP " + code);
+
+                in = conn.getInputStream();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+                    ContentValues values = new ContentValues();
+                    values.put(MediaStore.Downloads.DISPLAY_NAME, fileName);
+                    if (mimeType != null) values.put(MediaStore.Downloads.MIME_TYPE, mimeType);
+                    values.put(MediaStore.Downloads.RELATIVE_PATH, Environment.DIRECTORY_DOWNLOADS);
+                    targetUri = requireContext().getContentResolver()
+                            .insert(MediaStore.Downloads.EXTERNAL_CONTENT_URI, values);
+                    if (targetUri == null) throw new IOException("MediaStore falhou");
+                    out = requireContext().getContentResolver().openOutputStream(targetUri);
+                } else {
+                    File dir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
+                    File outFile = new File(dir, fileName);
+                    out = new FileOutputStream(outFile);
+                    targetUri = Uri.fromFile(outFile);
+                }
+                byte[] buf = new byte[8192]; int len;
+                while ((len = in.read(buf)) != -1) out.write(buf, 0, len);
+                if (out != null) out.flush();
+
+                Intent openIntent = new Intent(Intent.ACTION_VIEW);
+                openIntent.setDataAndType(targetUri, mimeType != null ? mimeType : "*/*");
+                openIntent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION);
+                PendingIntent pi = PendingIntent.getActivity(
+                        requireContext(), 0, openIntent,
+                        PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
+                );
+
+                notif.setContentText("Concluído: " + fileName)
+                        .setOngoing(false)
+                        .setAutoCancel(true)
+                        .setSmallIcon(android.R.drawable.stat_sys_download_done)
+                        .setContentIntent(pi);
+                NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build());
+
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q) {
+                    requireContext().sendBroadcast(
+                            new Intent(Intent.ACTION_MEDIA_SCANNER_SCAN_FILE, targetUri)
+                    );
+                }
+            } catch (Exception e) {
+                Log.e("DownloadManual","erro",e);
+                notif.setContentText("Falha: " + fileName)
+                        .setOngoing(false)
+                        .setAutoCancel(true)
+                        .setSmallIcon(android.R.drawable.stat_notify_error);
+                NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build());
+            } finally {
+                if (conn != null) conn.disconnect();
+                try { if (in != null) in.close(); } catch (IOException ignored) {}
+                try { if (out != null) out.close(); } catch (IOException ignored) {}
+            }
+        });
+    }
+
+    private boolean needsStoragePermission() {
+        return Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q;
+    }
+
+    private boolean hasStoragePermission() {
+        return ContextCompat.checkSelfPermission(requireContext(),
+                Manifest.permission.WRITE_EXTERNAL_STORAGE) == PackageManager.PERMISSION_GRANTED;
     }
 
     @Override
-    public void onViewCreated(@NonNull View view,
-                              @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-
-        loadingContainer    = view.findViewById(R.id.loadingContainer);
-        contentContainer    = view.findViewById(R.id.contentContainer);
-        layoutSemInternet   = view.findViewById(R.id.layout_sem_internet);
-        btnTentarNovamente  = view.findViewById(R.id.btn_tentar_novamente);
-        viewPager           = view.findViewById(R.id.viewPager);
-        newsRecyclerView    = view.findViewById(R.id.newsRecyclerView);
-
-        newsRecyclerView.setLayoutManager(
-                new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false)
-        );
-
-        btnTentarNovamente.setOnClickListener(v -> checkInternetAndLoadData());
-        checkInternetAndLoadData();
-    }
-
-    private void checkInternetAndLoadData() {
-        if (hasInternetConnection()) {
-            showLoadingState();
-            new Thread(this::fetchHomeData).start();
-        } else {
-            showOfflineState();
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        if (webView != null) {
+            applyWebViewDarkMode(webView.getSettings());
+            webView.reload();
         }
-    }
-
-    private void showLoadingState() {
-        requireActivity().runOnUiThread(() -> {
-            loadingContainer.setVisibility(View.VISIBLE);
-            contentContainer.setVisibility(View.GONE);
-            layoutSemInternet.setVisibility(View.GONE);
-        });
-    }
-
-    private void showContentState() {
-        requireActivity().runOnUiThread(() -> {
-            loadingContainer.setVisibility(View.GONE);
-            contentContainer.setVisibility(View.VISIBLE);
-            layoutSemInternet.setVisibility(View.GONE);
-        });
-    }
-
-    private void showOfflineState() {
-        requireActivity().runOnUiThread(() -> {
-            loadingContainer.setVisibility(View.GONE);
-            contentContainer.setVisibility(View.GONE);
-            layoutSemInternet.setVisibility(View.VISIBLE);
-        });
-    }
-
-    private boolean hasInternetConnection() {
-        ConnectivityManager cm = (ConnectivityManager) requireContext()
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Network network = cm.getActiveNetwork();
-            if (network == null) return false;
-            NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-            return caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
-        } else {
-            NetworkInfo netInfo = cm.getActiveNetworkInfo();
-            return netInfo != null && netInfo.isConnected();
-        }
-    }
-
-    private void fetchHomeData() {
-        try {
-            // Preserva cookies de sessão
-            CookieManager cookieManager = CookieManager.getInstance();
-            String cookies = cookieManager.getCookie(HOME_URL);
-
-            Document doc = Jsoup.connect(HOME_URL)
-                    .userAgent("Mozilla/5.0")
-                    .header("Cookie", cookies != null ? cookies : "")
-                    .timeout(15000)
-                    .get();
-
-            processCarousel(doc);
-            processNews(doc);
-
-            requireActivity().runOnUiThread(() -> {
-                if (carouselItems.isEmpty() && newsItems.isEmpty()) {
-                    navigateToWebView(OUT_URL);
-                } else {
-                    showContentState();
-                    setupCarousel();
-                    setupNews();
-                }
-            });
-
-        } catch (IOException e) {
-            Log.e("HomeFragment", "Erro ao buscar dados: " + e.getMessage());
-            requireActivity().runOnUiThread(() -> {
-                if (carouselItems.isEmpty() && newsItems.isEmpty()) {
-                    navigateToWebView(OUT_URL);
-                } else {
-                    showOfflineState();
-                }
-            });
-        }
-    }
-
-    private void processCarousel(Document doc) {
-        Element carousel = doc.getElementById("home_banners_carousel");
-        if (carousel == null) return;
-        Elements items = carousel.select(".carousel-item");
-        for (Element item : items) {
-            if (isFragmentDestroyed) return;
-            Element linkElem = item.selectFirst("a");
-            String linkUrl = linkElem != null ? linkElem.attr("href") : "";
-            String imgUrl  = item.select("img").attr("src");
-            if (!imgUrl.startsWith("http")) {
-                imgUrl = "https://www.colegioetapa.com.br" + imgUrl;
-            }
-            carouselItems.add(new CarouselItem(imgUrl, linkUrl));
-        }
-    }
-
-    private void processNews(Document doc) {
-        Element newsSection = doc.selectFirst("div.col-12.col-lg-8.mb-5");
-        if (newsSection == null) return;
-        Elements cards = newsSection.select(".card.border-radius-card");
-        cards.removeAll(
-                newsSection.select("#modal-avisos-importantes .card.border-radius-card")
-        );
-        for (Element card : cards) {
-            String iconUrl = card.select("img.aviso-icon").attr("src");
-            String title   = card.select("p.text-blue.aviso-text").text();
-            String desc    = card.select("p.m-0.aviso-text").text();
-            String link    = card.select("a[target=_blank]").attr("href");
-            if (!iconUrl.startsWith("http")) {
-                iconUrl = "https://areaexclusiva.colegioetapa.com.br" + iconUrl;
-            }
-            boolean duplicate = false;
-            for (NewsItem ni : newsItems) {
-                if (ni.getTitle().equals(title)) {
-                    duplicate = true;
-                    break;
-                }
-            }
-            if (!duplicate) {
-                newsItems.add(new NewsItem(iconUrl, title, desc, link));
-            }
-        }
-    }
-
-    private void navigateToWebView(String url) {
-        WebViewFragment fragment = new WebViewFragment();
-        fragment.setArguments(WebViewFragment.createArgs(url));
-        requireActivity().getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.nav_host_fragment, fragment)
-                .addToBackStack(null)
-                .commit();
-    }
-
-    private void setupCarousel() {
-        viewPager.setAdapter(new CarouselAdapter());
-        viewPager.setPageTransformer((page, position) -> {
-            float offset = position * -60f;
-            page.setTranslationX(offset);
-        });
-    }
-
-    private void setupNews() {
-        newsRecyclerView.setAdapter(new NewsAdapter());
     }
 
     @Override
     public void onDestroyView() {
+        if (webView != null) ((ViewGroup)webView.getParent()).removeView(webView);
         super.onDestroyView();
-        isFragmentDestroyed = true;
     }
 
-    // --- Adapters, ViewHolders e Models ---
-
-    private class CarouselAdapter extends RecyclerView.Adapter<CarouselViewHolder> {
-        @NonNull
-        @Override
-        public CarouselViewHolder onCreateViewHolder(
-                @NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_carousel, parent, false);
-            return new CarouselViewHolder(v);
-        }
-        @Override
-        public void onBindViewHolder(
-                @NonNull CarouselViewHolder holder, int position) {
-            CarouselItem item = carouselItems.get(position);
-            Glide.with(holder.itemView.getContext())
-                    .load(item.getImageUrl())
-                    .centerCrop()
-                    .into(holder.imageView);
-            holder.itemView.setOnClickListener(v ->
-                    navigateToWebView(item.getLinkUrl())
-            );
-        }
-        @Override
-        public int getItemCount() {
-            return carouselItems.size();
-        }
-    }
-
-    private class NewsAdapter extends RecyclerView.Adapter<NewsViewHolder> {
-        @NonNull
-        @Override
-        public NewsViewHolder onCreateViewHolder(
-                @NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.news_item, parent, false);
-            return new NewsViewHolder(v);
-        }
-        @Override
-        public void onBindViewHolder(
-                @NonNull NewsViewHolder holder, int position) {
-            NewsItem item = newsItems.get(position);
-            Glide.with(holder.itemView.getContext())
-                    .load(item.getIconUrl())
-                    .into(holder.icon);
-            holder.title.setText(item.getTitle());
-            holder.description.setText(item.getDescription());
-            holder.itemView.setOnClickListener(v ->
-                    navigateToWebView(item.getLink())
-            );
-        }
-        @Override
-        public int getItemCount() {
-            return newsItems.size();
-        }
-    }
-
-    static class CarouselViewHolder extends RecyclerView.ViewHolder {
-        ImageView imageView;
-        CarouselViewHolder(View itemView) {
-            super(itemView);
-            imageView = itemView.findViewById(R.id.imageView);
-        }
-    }
-
-    static class NewsViewHolder extends RecyclerView.ViewHolder {
-        ImageView icon;
-        TextView title, description;
-        NewsViewHolder(View view) {
-            super(view);
-            icon        = view.findViewById(R.id.news_icon);
-            title       = view.findViewById(R.id.news_title);
-            description = view.findViewById(R.id.news_description);
-        }
-    }
-
-    static class CarouselItem {
-        private final String imageUrl, linkUrl;
-        CarouselItem(String imageUrl, String linkUrl) {
-            this.imageUrl = imageUrl;
-            this.linkUrl  = linkUrl;
-        }
-        public String getImageUrl() { return imageUrl; }
-        public String getLinkUrl()  { return linkUrl;  }
-    }
-
-    static class NewsItem {
-        private final String iconUrl, title, description, link;
-        NewsItem(String iconUrl, String title,
-                 String description, String link) {
-            this.iconUrl    = iconUrl;
-            this.title      = title;
-            this.description= description;
-            this.link       = link;
-        }
-        public String getIconUrl()    { return iconUrl;    }
-        public String getTitle()      { return title;      }
-        public String getDescription(){ return description;}
-        public String getLink()       { return link;       }
+    @Override
+    public void onDestroy() {
+        if (webView != null) {webView.destroy(); webView = null;}
+        super.onDestroy();
     }
 }

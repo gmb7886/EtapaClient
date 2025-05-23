@@ -9,8 +9,7 @@
         <item name="colorOnPrimary">@color/colorOnPrimary</item>
         <item name="colorPrimaryContainer">@color/colorPrimaryContainer</item>
         <item name="colorSurface">@color/colorSurface</item>
-        <item name="colorOutline">@color/outline</item>
-        <item name="colorSurfaceContainer">@color/surface_container</item>
+        <!-- Configurações das barras -->
         <item name="android:statusBarColor">@android:color/transparent</item>
         <item name="android:navigationBarColor">@android:color/transparent</item>
         <item name="colorSurfaceVariant">@android:color/black</item>
