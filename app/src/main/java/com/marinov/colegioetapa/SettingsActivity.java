@@ -1,9 +1,7 @@
 package com.marinov.colegioetapa;
 
 import android.annotation.SuppressLint;
-import android.app.NotificationChannel;
-import android.app.NotificationManager;
-import android.app.PendingIntent;
+import android.app.AlertDialog;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.content.res.Configuration;
@@ -13,26 +11,21 @@ import android.os.AsyncTask;
 import android.os.Build;
 import android.os.Bundle;
 import android.os.Environment;
-import android.os.Handler;
-import android.os.Looper;
 import android.util.Log;
 import android.view.View;
 import android.webkit.CookieManager;
-import android.webkit.URLUtil;
-import android.webkit.WebView;
-import android.webkit.WebViewClient;
 import android.widget.Button;
+import android.widget.ProgressBar;
 import android.widget.Toast;
-import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
 import androidx.appcompat.widget.Toolbar;
 import androidx.core.app.ActivityCompat;
-import androidx.core.app.NotificationCompat;
 import androidx.core.content.FileProvider;
 import androidx.core.view.ViewCompat;
 import androidx.core.view.WindowInsetsCompat;
 import androidx.core.view.WindowInsetsControllerCompat;
 import com.google.android.material.color.MaterialColors;
+import org.json.JSONArray;
 import org.json.JSONObject;
 import java.io.BufferedReader;
 import java.io.File;
@@ -45,8 +38,6 @@ import java.util.stream.Collectors;
 
 public class SettingsActivity extends AppCompatActivity {
     private static final String TAG = "SettingsActivity";
-    private static final int DOWNLOAD_NOTIFICATION_ID = 1000;
-    private static final int INSTALL_NOTIFICATION_ID = 1001;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -122,12 +113,12 @@ public class SettingsActivity extends AppCompatActivity {
         btnGithub.setOnClickListener(v -> openUrl("https://github.com/gmb7886/"));
         btnYoutube.setOnClickListener(v -> openUrl("https://youtube.com/@CanalDoMarinov"));
 
-        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.N) {
             btnCheck.setEnabled(false);
             btnCheck.setAlpha(0.5f);
             Toast.makeText(
                     this,
-                    "Função de atualização OTA disponível a partir do Android 12.0 ou superior",
+                    "Função de atualização OTA disponível a partir do Android 7.0 ou superior",
                     Toast.LENGTH_LONG
             ).show();
         } else {
@@ -148,7 +139,6 @@ public class SettingsActivity extends AppCompatActivity {
         clearSharedPreferences("materia_cache");
         clearSharedPreferences("notas_prefs");
 
-        // Limpar downloads antigos
         File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
         File[] files = downloadsDir.listFiles((dir, name) -> name.endsWith(".apk"));
         if (files != null) {
@@ -215,42 +205,30 @@ public class SettingsActivity extends AppCompatActivity {
         if (latest.equals(BuildConfig.VERSION_NAME)) {
             showMessage();
         } else {
-            promptForUpdate(release.getString("html_url"));
+            JSONArray assets = release.getJSONArray("assets");
+            String apkUrl = null;
+            for (int i = 0; i < assets.length(); i++) {
+                JSONObject asset = assets.getJSONObject(i);
+                if (asset.getString("name").endsWith(".apk")) {
+                    apkUrl = asset.getString("browser_download_url");
+                    break;
+                }
+            }
+            if (apkUrl != null) {
+                promptForUpdate(apkUrl);
+            } else {
+                showError("Arquivo APK não encontrado no release.");
+            }
         }
     }
 
     private void promptForUpdate(String url) {
         runOnUiThread(() -> new AlertDialog.Builder(this)
                 .setTitle("Atualização Disponível")
-                .setMessage("Deseja atualizar?")
-                .setPositiveButton("Sim", (d, w) -> showWebView(url))
+                .setMessage("Deseja baixar e instalar a versão mais recente?")
+                .setPositiveButton("Sim", (d, w) -> startManualDownload(url))
                 .setNegativeButton("Não", null)
                 .show());
-    }
-
-    @SuppressLint("SetJavaScriptEnabled")
-    private void showWebView(String url) {
-        View content = getLayoutInflater().inflate(R.layout.dialog_webview, null, false);
-        WebView webView = content.findViewById(R.id.dialog_webview);
-
-        webView.getSettings().setJavaScriptEnabled(true);
-        webView.setWebViewClient(new WebViewClient() {
-            @Override
-            public boolean shouldOverrideUrlLoading(WebView view, String url) {
-                if (url.endsWith(".apk")) {
-                    startManualDownload(url);
-                    return true;
-                }
-                return super.shouldOverrideUrlLoading(view, url);
-            }
-        });
-
-        new AlertDialog.Builder(this)
-                .setView(content)
-                .setNegativeButton("Fechar", (dialog, which) -> dialog.dismiss())
-                .show();
-
-        webView.loadUrl(url);
     }
 
     private void startManualDownload(String apkUrl) {
@@ -259,21 +237,17 @@ public class SettingsActivity extends AppCompatActivity {
 
     @SuppressLint("StaticFieldLeak")
     private class DownloadTask extends AsyncTask<String, Integer, File> {
-        private NotificationManager notificationManager;
-        private NotificationCompat.Builder builder;
+        private AlertDialog progressDialog;
+        private ProgressBar progressBar;
 
         @Override
         protected void onPreExecute() {
-            checkNotificationPermission();
-            notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-            builder = new NotificationCompat.Builder(SettingsActivity.this, "update_channel")
-                    .setContentTitle("Baixando atualização")
-                    .setSmallIcon(R.drawable.ic_download)
-                    .setPriority(NotificationCompat.PRIORITY_HIGH)
-                    .setOngoing(true)
-                    .setAutoCancel(false);
-            createNotificationChannel();
-            notificationManager.notify(DOWNLOAD_NOTIFICATION_ID, builder.build());
+            AlertDialog.Builder builder = new AlertDialog.Builder(SettingsActivity.this);
+            View view = getLayoutInflater().inflate(R.layout.dialog_download_progress, null);
+            progressBar = view.findViewById(R.id.progress_bar);
+            builder.setView(view).setCancelable(false);
+            progressDialog = builder.create();
+            progressDialog.show();
         }
 
         @Override
@@ -285,7 +259,7 @@ public class SettingsActivity extends AppCompatActivity {
 
                 File outputFile = new File(
                         Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS),
-                        URLUtil.guessFileName(urls[0], null, null)
+                        "app_release.apk"
                 );
 
                 try (InputStream input = connection.getInputStream();
@@ -306,59 +280,29 @@ public class SettingsActivity extends AppCompatActivity {
                 }
                 return outputFile;
             } catch (Exception e) {
-                Log.e(TAG, "Download error", e);
+                Log.e(TAG, "Erro no download", e);
                 return null;
             }
         }
 
         @Override
         protected void onProgressUpdate(Integer... progress) {
-            builder.setProgress(100, progress[0], false)
-                    .setContentText(progress[0] + "% concluído");
-            notificationManager.notify(DOWNLOAD_NOTIFICATION_ID, builder.build());
+            progressBar.setProgress(progress[0]);
         }
 
         @Override
         protected void onPostExecute(File apkFile) {
-            notificationManager.cancel(DOWNLOAD_NOTIFICATION_ID);
-            new Handler(Looper.getMainLooper()).postDelayed(() -> {
-                if (apkFile != null && apkFile.exists()) {
-                    showInstallNotification(apkFile);
-                } else {
-                    showError("Falha no download");
-                }
-            }, 1000);
-        }
-
-        private void createNotificationChannel() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-                NotificationChannel channel = new NotificationChannel(
-                        "update_channel",
-                        "Atualizações",
-                        NotificationManager.IMPORTANCE_HIGH
-                );
-                channel.setDescription("Notificações de atualização do app");
-                channel.setLockscreenVisibility(NotificationCompat.VISIBILITY_PUBLIC);
-                notificationManager.createNotificationChannel(channel);
-            }
-        }
-
-        private void checkNotificationPermission() {
-            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU &&
-                    checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-                ActivityCompat.requestPermissions(
-                        SettingsActivity.this,
-                        new String[]{android.Manifest.permission.POST_NOTIFICATIONS},
-                        100
-                );
+            progressDialog.dismiss();
+            if (apkFile != null && apkFile.exists()) {
+                showInstallDialog(apkFile);
+            } else {
+                showError("Falha ao baixar o arquivo.");
             }
         }
     }
 
-    private void showInstallNotification(File apkFile) {
+    private void showInstallDialog(File apkFile) {
         try {
-            NotificationManager notificationManager = (NotificationManager) getSystemService(NOTIFICATION_SERVICE);
-
             Uri apkUri = FileProvider.getUriForFile(
                     this,
                     BuildConfig.APPLICATION_ID + ".provider",
@@ -370,25 +314,15 @@ public class SettingsActivity extends AppCompatActivity {
                     .addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK);
 
-            PendingIntent pendingIntent = PendingIntent.getActivity(
-                    this,
-                    0,
-                    installIntent,
-                    PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE
-            );
-
-            NotificationCompat.Builder builder = new NotificationCompat.Builder(this, "update_channel")
-                    .setContentTitle("Atualização pronta")
-                    .setContentText("Toque para instalar")
-                    .setSmallIcon(R.drawable.ic_download_complete)
-                    .setContentIntent(pendingIntent)
-                    .setAutoCancel(true)
-                    .setBadgeIconType(NotificationCompat.BADGE_ICON_SMALL);
-
-            notificationManager.notify(INSTALL_NOTIFICATION_ID, builder.build());
-        } catch (IllegalArgumentException e) {
-            Log.e(TAG, "Erro na notificação de instalação", e);
-            showError("Erro na instalação: " + e.getMessage());
+            new AlertDialog.Builder(this)
+                    .setTitle("Download concluído")
+                    .setMessage("Deseja instalar a atualização agora?")
+                    .setPositiveButton("Instalar", (d, w) -> startActivity(installIntent))
+                    .setNegativeButton("Cancelar", null)
+                    .show();
+        } catch (Exception e) {
+            Log.e(TAG, "Erro na instalação", e);
+            showError("Erro ao iniciar a instalação: " + e.getMessage());
         }
     }
 
