@@ -25,6 +25,7 @@ import android.view.LayoutInflater;
 import android.view.View;
 import android.view.ViewGroup;
 import android.webkit.CookieManager;
+import android.webkit.JavascriptInterface;
 import android.webkit.URLUtil;
 import android.webkit.WebChromeClient;
 import android.webkit.WebResourceError;
@@ -60,20 +61,21 @@ import java.util.concurrent.Executors;
 public class HomeFragment extends Fragment {
     public static final String URL = "https://areaexclusiva.colegioetapa.com.br/home";
     private static final String PREFS_NAME = "app_prefs";
-
+    private static final String AUTOFILL_PREFS = "autofill_prefs";
     private static final String KEY_ASKED_STORAGE = "asked_storage";
     private static final int REQUEST_STORAGE_PERMISSION = 1001;
-
     private static final String CHANNEL_ID = "download_channel";
     private static final int NOTIFICATION_ID = 1;
 
     private WebView webView;
     private LinearLayout layoutSemInternet;
     private MaterialButton btnTentarNovamente;
+    private SharedPreferences sharedPrefs;
 
     @Override
     public void onCreate(@Nullable Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+        sharedPrefs = requireContext().getSharedPreferences(AUTOFILL_PREFS, Context.MODE_PRIVATE);
         createNotificationChannel();
     }
 
@@ -97,50 +99,47 @@ public class HomeFragment extends Fragment {
 
         return view;
     }
+
+    class JsInterface {
+        @JavascriptInterface
+        public void saveCredentials(String user, String password) {
+            sharedPrefs.edit()
+                    .putString("user", user)
+                    .putString("password", password)
+                    .apply();
+        }
+
+        @JavascriptInterface
+        public String getSavedUser() {
+            return sharedPrefs.getString("user", "");
+        }
+
+        @JavascriptInterface
+        public String getSavedPassword() {
+            return sharedPrefs.getString("password", "");
+        }
+    }
+
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        // Configurar o callback do botão voltar
-        // Retrocede no WebView
-        // Remove o callback e executa o comportamento padrão
         OnBackPressedCallback onBackPressedCallback = new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (webView != null && webView.canGoBack()) {
-                    webView.goBack(); // Retrocede no WebView
+                    webView.goBack();
                 } else {
-                    // Remove o callback e executa o comportamento padrão
                     setEnabled(false);
                     requireActivity().onBackPressed();
                 }
             }
         };
 
-        // Registrar o callback no dispatcher
         requireActivity().getOnBackPressedDispatcher().addCallback(
                 getViewLifecycleOwner(),
                 onBackPressedCallback
         );
-    }
-    private void createNotificationChannel() {
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            NotificationChannel channel = new NotificationChannel(
-                    CHANNEL_ID,
-                    "Downloads",
-                    NotificationManager.IMPORTANCE_LOW
-            );
-            channel.setDescription("Downloads");
-            NotificationManager manager = requireContext().getSystemService(NotificationManager.class);
-            if (manager != null) manager.createNotificationChannel(channel);
-        }
-    }
-
-    private void navigateToHome() {
-        try {
-            BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
-            bottomNav.setSelectedItemId(R.id.navigation_home);
-        } catch (Exception ignored) {}
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
@@ -161,6 +160,7 @@ public class HomeFragment extends Fragment {
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
 
+        webView.addJavascriptInterface(new JsInterface(), "AndroidAutofill");
         applyWebViewDarkMode(settings);
         setupWebViewSecurity();
 
@@ -177,6 +177,7 @@ public class HomeFragment extends Fragment {
                 if (isSystemDarkMode()) injectCssDarkMode(view);
                 showWebViewWithAnimation(view);
                 layoutSemInternet.setVisibility(View.GONE);
+                injectAutoFillScript(view);
             }
 
             @Override
@@ -184,9 +185,82 @@ public class HomeFragment extends Fragment {
                 super.onReceivedError(view, request, error);
                 if (!isOnline()) showNoInternetUI();
             }
+
+            @Override
+            public void doUpdateVisitedHistory(WebView view, String url, boolean isReload) {
+                injectAutoFillScript(view);
+            }
         });
 
         configureDownloadListener();
+    }
+
+    private void injectAutoFillScript(WebView view) {
+        String script = "(function() {" +
+                "const observerConfig = { childList: true, subtree: true };" +
+                "const userFields = ['#matricula'];" +
+                "const passFields = ['#senha'];" +
+
+                "function setupAutofill() {" +
+                "   const userField = document.querySelector(userFields.join(', '));" +
+                "   const passField = document.querySelector(passFields.join(', '));" +
+
+                "   if (userField && passField) {" +
+                "       if (userField.value === '') {" +
+                "           userField.value = AndroidAutofill.getSavedUser();" +
+                "       }" +
+                "       if (passField.value === '') {" +
+                "           passField.value = AndroidAutofill.getSavedPassword();" +
+                "       }" +
+
+                "       function handleInput() {" +
+                "           AndroidAutofill.saveCredentials(userField.value, passField.value);" +
+                "       }" +
+
+                "       userField.addEventListener('input', handleInput);" +
+                "       passField.addEventListener('input', handleInput);" +
+                "       return true;" +
+                "   }" +
+                "   return false;" +
+                "}" +
+
+                "if (!setupAutofill()) {" +
+                "   const observer = new MutationObserver((mutations) => {" +
+                "       if (setupAutofill()) {" +
+                "           observer.disconnect();" +
+                "       }" +
+                "   });" +
+                "   observer.observe(document.body, observerConfig);" +
+                "}" +
+
+                "document.querySelectorAll('.nav-link').forEach(tab => {" +
+                "   tab.addEventListener('click', () => {" +
+                "       setTimeout(setupAutofill, 300);" +
+                "   });" +
+                "});" +
+                "})();";
+
+        view.evaluateJavascript(script, null);
+    }
+
+    private void createNotificationChannel() {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+            NotificationChannel channel = new NotificationChannel(
+                    CHANNEL_ID,
+                    "Downloads",
+                    NotificationManager.IMPORTANCE_LOW
+            );
+            channel.setDescription("Downloads");
+            NotificationManager manager = requireContext().getSystemService(NotificationManager.class);
+            if (manager != null) manager.createNotificationChannel(channel);
+        }
+    }
+
+    private void navigateToHome() {
+        try {
+            BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
+            bottomNav.setSelectedItemId(R.id.navigation_home);
+        } catch (Exception ignored) {}
     }
 
     private void applyWebViewDarkMode(WebSettings settings) {
@@ -222,13 +296,16 @@ public class HomeFragment extends Fragment {
                 "document.documentElement.style.webkitUserSelect='none';" +
                 "var nav=document.querySelector('#page-content-wrapper > nav'); if(nav) nav.remove();" +
                 "var sidebar=document.querySelector('#sidebar-wrapper'); if(sidebar) sidebar.remove();" +
+                "var responsavelTab=document.querySelector('#responsavel-tab'); if(responsavelTab) responsavelTab.remove();" +
+                "var alunoTab=document.querySelector('#aluno-tab'); if(alunoTab) alunoTab.remove();" +
+                "var login=document.querySelector('#login'); if(login) login.remove();" +
+                "var cardElement=document.querySelector('body > div.row.mx-0.pt-4 > div > div.card.mt-4.border-radius-card.border-0.shadow'); if(cardElement) cardElement.remove();" +
                 "var style=document.createElement('style');" +
                 "style.type='text/css';" +
                 "style.appendChild(document.createTextNode('::-webkit-scrollbar{display:none;}'));" +
                 "document.head.appendChild(style);";
         view.evaluateJavascript(js, null);
     }
-
     private void injectCssDarkMode(WebView view) {
         String css = "html{filter:invert(1) hue-rotate(180deg)!important; background:#121212!important;}" +
                 "img,picture,video,iframe{filter:invert(1) hue-rotate(180deg)!important;}";
@@ -261,8 +338,13 @@ public class HomeFragment extends Fragment {
         return netInfo != null && netInfo.isConnected();
     }
 
-    private void restoreCookies() {/* implementar */}
-    private void saveCookies()   {/* implementar */}
+    private void restoreCookies() {
+        // Implementação de restauração de cookies
+    }
+
+    private void saveCookies() {
+        // Implementação de salvamento de cookies
+    }
 
     private void checkStoragePermissions() {
         SharedPreferences prefs = requireContext()

@@ -101,6 +101,7 @@ public class SettingsActivity extends AppCompatActivity {
     private void setupUI() {
         Button btnCheck = findViewById(R.id.btn_check_update);
         Button btnClear = findViewById(R.id.btn_clear_data);
+        Button btnClearPassword = findViewById(R.id.btn_clear_password);
         Button btnTwitter = findViewById(R.id.btn_twitter);
         Button btnReddit = findViewById(R.id.btn_reddit);
         Button btnGithub = findViewById(R.id.btn_github);
@@ -129,6 +130,10 @@ public class SettingsActivity extends AppCompatActivity {
             clearAllCacheData();
             Toast.makeText(this, "Base de dados apagada com sucesso!", Toast.LENGTH_SHORT).show();
         });
+                btnClearPassword.setOnClickListener(v -> {
+                    clearAutoFill();
+                    Toast.makeText(this, "Dados de preenchimento automático apagados com sucesso!", Toast.LENGTH_SHORT).show();
+                });
     }
 
     private void clearAllCacheData() {
@@ -136,14 +141,10 @@ public class SettingsActivity extends AppCompatActivity {
         clearSharedPreferences("calendario_prefs");
         clearSharedPreferences("materia_cache");
         clearSharedPreferences("notas_prefs");
+    }
 
-        File downloadsDir = Environment.getExternalStoragePublicDirectory(Environment.DIRECTORY_DOWNLOADS);
-        File[] files = downloadsDir.listFiles((dir, name) -> name.endsWith(".apk"));
-        if (files != null) {
-            for (File file : files) {
-                file.delete();
-            }
-        }
+    private void clearAutoFill() {
+        clearSharedPreferences("autofill_prefs");
     }
 
     private void clearSharedPreferences(String name) {
