@@ -1,5 +1,6 @@
 package com.marinov.colegioetapa;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.net.ConnectivityManager;
@@ -163,6 +164,7 @@ public class CalendarioProvas extends Fragment {
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     private class FetchProvasTask extends AsyncTask<String, Void, Document> {
         @Override
         protected void onPreExecute() {
@@ -283,6 +285,7 @@ public class CalendarioProvas extends Fragment {
             this.parentFragment = parentFragment;
         }
 
+        @SuppressLint("NotifyDataSetChanged")
         public void updateData(List<ProvaItem> newItems) {
             this.items = newItems;
             notifyDataSetChanged();

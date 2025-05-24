@@ -2,7 +2,10 @@ package com.marinov.colegioetapa;
 
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.os.Build;
 import android.util.Log;
+
+import androidx.annotation.RequiresApi;
 
 import org.json.JSONObject;
 
@@ -24,6 +27,7 @@ public class UpdateChecker {
         void onError(String message);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     public static void checkForUpdate(Context context, UpdateListener listener) {
         new Thread(() -> {
             try {
@@ -59,6 +63,7 @@ public class UpdateChecker {
         }).start();
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     private static String readResponseStream(HttpURLConnection conn) throws Exception {
         try (InputStream is = conn.getInputStream();
              BufferedReader br = new BufferedReader(new InputStreamReader(is))) {

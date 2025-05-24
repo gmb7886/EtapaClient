@@ -1,5 +1,6 @@
 package com.marinov.colegioetapa;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
 import android.graphics.Typeface;
@@ -34,7 +35,6 @@ public class NotasFragment extends Fragment {
     private TableLayout tableNotas;
     private LinearLayout barOffline;
     private CacheHelper cache;
-    private OnBackPressedCallback onBackPressedCallback;
 
     @Nullable
     @Override
@@ -52,6 +52,7 @@ public class NotasFragment extends Fragment {
         return root;
     }
 
+    @SuppressLint("StaticFieldLeak")
     private class FetchNotasTask extends AsyncTask<String, Void, Document> {
         @Override
         protected Document doInBackground(String... urls) {
@@ -109,7 +110,8 @@ public class NotasFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // Configurar o callback do botão voltar
-        onBackPressedCallback = new OnBackPressedCallback(true) {
+        // Simula um clique no item "Início" da BottomNavigation
+        OnBackPressedCallback onBackPressedCallback = new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 // Simula um clique no item "Início" da BottomNavigation
@@ -171,7 +173,7 @@ public class NotasFragment extends Fragment {
                         double d = Double.parseDouble(val);
                         sums[j-2] += d;
                         counts[j-2]++;
-                    } catch (NumberFormatException x){}
+                    } catch (NumberFormatException ignored){}
                 }
                 TextView tv = createCell(val, false);
                 tv.setTextColor(colorDefault);
@@ -198,7 +200,7 @@ public class NotasFragment extends Fragment {
             first.setTextColor(colorHeaderText);
             avg.addView(first);
             for (int k = 0; k < notaCols; k++) {
-                String m = counts[k] > 0 ? String.format("%.2f", sums[k]/counts[k]) : "--";
+                @SuppressLint("DefaultLocale") String m = counts[k] > 0 ? String.format("%.2f", sums[k]/counts[k]) : "--";
                 TextView tvm = createCell(m, true);
                 tvm.setTextColor(colorHeaderText);
                 avg.addView(tvm);

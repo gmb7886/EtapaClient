@@ -61,7 +61,6 @@ public class CardapioFragment extends Fragment {
     public static final String URL = "https://areaexclusiva.colegioetapa.com.br/cardapio";
     private static final String PREFS_NAME = "app_prefs";
 
-    private OnBackPressedCallback onBackPressedCallback;
     private static final String KEY_ASKED_STORAGE = "asked_storage";
     private static final int REQUEST_STORAGE_PERMISSION = 1001;
 
@@ -91,7 +90,7 @@ public class CardapioFragment extends Fragment {
         webView = view.findViewById(R.id.webview);
 
         if (isOnline()) {
-            initializeWebView(view);
+            initializeWebView();
         } else {
             showNoInternetUI();
         }
@@ -103,7 +102,9 @@ public class CardapioFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // Configurar o callback do botão voltar
-        onBackPressedCallback = new OnBackPressedCallback(true) {
+        // Retrocede no WebView
+        // Navega para o HomeFragment via BottomNavigation
+        OnBackPressedCallback onBackPressedCallback = new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (webView != null && webView.canGoBack()) {
@@ -144,7 +145,7 @@ public class CardapioFragment extends Fragment {
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     @SuppressLint({"SetJavaScriptEnabled", "WrongConstant"})
-    private void initializeWebView(View view) {
+    private void initializeWebView() {
         webView.setLayerType(View.LAYER_TYPE_HARDWARE, null);
         webView.setVerticalScrollBarEnabled(false);
         webView.setHorizontalScrollBarEnabled(false);
@@ -310,7 +311,7 @@ public class CardapioFragment extends Fragment {
         NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build());
 
         Executors.newSingleThreadExecutor().execute(() -> {
-            InputStream in = null; OutputStream out = null; HttpURLConnection conn = null; Uri targetUri = null;
+            InputStream in = null; OutputStream out = null; HttpURLConnection conn = null; Uri targetUri;
             try {
                 URL u = new URL(url);
                 conn = (HttpURLConnection) u.openConnection();
@@ -346,7 +347,10 @@ public class CardapioFragment extends Fragment {
                     targetUri = Uri.fromFile(outFile);
                 }
                 byte[] buf = new byte[8192]; int len;
-                while ((len = in.read(buf)) != -1) out.write(buf, 0, len);
+                while ((len = in.read(buf)) != -1) {
+                    assert out != null;
+                    out.write(buf, 0, len);
+                }
                 if (out != null) out.flush();
 
                 Intent openIntent = new Intent(Intent.ACTION_VIEW);

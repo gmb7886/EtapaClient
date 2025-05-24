@@ -52,7 +52,6 @@ import java.util.stream.Collectors;
 
 public class ProvasFragment extends Fragment {
     private static final String TAG = "ProvasFragment";
-    private OnBackPressedCallback onBackPressedCallback;
     private SearchView searchView;
     private RecyclerView recyclerProvas;
     private CircularProgressIndicator progressBar;
@@ -154,7 +153,10 @@ public class ProvasFragment extends Fragment {
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
 
-        onBackPressedCallback = new OnBackPressedCallback(true) {
+        // Voltar para a pasta pai
+        // Se estiver na raiz, navegar para o HomeFragment
+        // Opcional, dependendo do fluxo
+        OnBackPressedCallback onBackPressedCallback = new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (!currentPath.isEmpty()) {

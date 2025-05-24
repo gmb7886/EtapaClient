@@ -1,5 +1,6 @@
 package com.marinov.colegioetapa;
 
+import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.Intent;
 import android.content.SharedPreferences;
@@ -80,9 +81,7 @@ public class MateriadeProva extends Fragment {
 
         // ChatGPT (Supondo que o pacote seja válido)
         btnChatgpt.setOnClickListener(v -> compartilharConteudo("com.openai.chatgpt"));
-        btnDeepseek.setOnClickListener(v -> {
-            Toast.makeText(requireContext(), "Não suportado no momento.", Toast.LENGTH_SHORT).show();
-        });
+        btnDeepseek.setOnClickListener(v -> Toast.makeText(requireContext(), "Não suportado no momento.", Toast.LENGTH_SHORT).show());
     }
     private MaterialButton btnWhatsapp, btnWechat, btnChatgpt, btnDeepseek;
     private void compartilharConteudo(String pacoteApp) {
@@ -154,6 +153,7 @@ public class MateriadeProva extends Fragment {
         }
     }
 
+    @SuppressLint("StaticFieldLeak")
     private class FetchContentTask extends AsyncTask<String, Void, Document> {
         @Override
         protected void onPreExecute() {

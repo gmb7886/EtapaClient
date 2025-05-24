@@ -9,6 +9,7 @@ import android.content.Intent;
 import android.os.Build;
 
 import androidx.annotation.NonNull;
+import androidx.annotation.RequiresApi;
 import androidx.annotation.RequiresPermission;
 import androidx.core.app.NotificationCompat;
 import androidx.core.app.NotificationManagerCompat;
@@ -23,6 +24,7 @@ public class UpdateCheckWorker extends Worker {
         super(context, params);
     }
 
+    @RequiresApi(api = Build.VERSION_CODES.N)
     @NonNull
     @Override
     public Result doWork() {
@@ -30,7 +32,7 @@ public class UpdateCheckWorker extends Worker {
             @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
             @Override
             public void onUpdateAvailable(String url) {
-                showNotification(url);
+                showNotification();
             }
 
             @Override
@@ -43,13 +45,13 @@ public class UpdateCheckWorker extends Worker {
     }
 
     @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
-    private void showNotification(String url) {
+    private void showNotification() {
         createNotificationChannel();
 
         Intent intent = new Intent(getApplicationContext(), SettingsActivity.class);
         intent.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK);
 
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
             intent.putExtra("open_update_directly", true);
         }
 

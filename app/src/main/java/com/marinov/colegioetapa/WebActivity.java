@@ -1,7 +1,6 @@
 package com.marinov.colegioetapa;
 
 import android.annotation.SuppressLint;
-import android.graphics.Bitmap;
 import android.os.Bundle;
 import android.view.View;
 import android.webkit.WebResourceError;

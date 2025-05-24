@@ -35,10 +35,9 @@ public class HorariosAula extends Fragment {
     private static final String URL_HORARIOS = "https://areaexclusiva.colegioetapa.com.br/horarios/aulas";
     private TableLayout tableHorarios;
     private LinearLayout barOffline;
-    private OnBackPressedCallback onBackPressedCallback;
 
     private CacheHelper cache;
-    private MaterialButton btnLogin;
+
     @Nullable
     @Override
     public View onCreateView(@NonNull LayoutInflater inflater,
@@ -47,7 +46,7 @@ public class HorariosAula extends Fragment {
         View root = inflater.inflate(R.layout.fragment_horarios, container, false);
         tableHorarios = root.findViewById(R.id.tableHorarios);
         barOffline = root.findViewById(R.id.barOffline);
-        btnLogin = root.findViewById(R.id.btnLogin);
+        MaterialButton btnLogin = root.findViewById(R.id.btnLogin);
         cache = new CacheHelper(requireContext());
         new FetchHorariosTask().execute(URL_HORARIOS);
         btnLogin.setOnClickListener(v -> {
@@ -64,7 +63,8 @@ public class HorariosAula extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // Configurar o callback do botão voltar
-        onBackPressedCallback = new OnBackPressedCallback(true) {
+        // Simula um clique no item "Início" da BottomNavigation
+        OnBackPressedCallback onBackPressedCallback = new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 // Simula um clique no item "Início" da BottomNavigation

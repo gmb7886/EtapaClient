@@ -50,7 +50,6 @@ public class EADFragment extends Fragment {
     private static final String KEY_ASKED_STORAGE = "asked_storage";
     private static final String KEY_SHOW_WARNING = "show_warning";
     private static final int REQUEST_STORAGE_PERMISSION = 1001;
-    private OnBackPressedCallback onBackPressedCallback;
     private WebView webView;
     private FrameLayout fullscreenContainer;
     private WebChromeClient.CustomViewCallback customViewCallback;
@@ -106,7 +105,9 @@ public class EADFragment extends Fragment {
         super.onViewCreated(view, savedInstanceState);
 
         // Configurar o callback do botão voltar
-        onBackPressedCallback = new OnBackPressedCallback(true) {
+        // Retrocede no WebView
+        // Navega para o HomeFragment via BottomNavigation
+        OnBackPressedCallback onBackPressedCallback = new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (webView != null && webView.canGoBack()) {

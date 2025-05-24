@@ -41,9 +41,6 @@ public class MainActivity extends AppCompatActivity {
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
-
-        // Verifica se a versão do Android é inferior a 6.0 (API 23)
-
         MaterialColors.getColor(this,
                 com.google.android.material.R.attr.colorPrimaryContainer,
                 Color.BLACK);
