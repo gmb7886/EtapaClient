@@ -87,7 +87,6 @@ public class WebViewFragment extends Fragment {
         createNotificationChannel();
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     @SuppressLint("MissingPermission")
     @Nullable
     @Override
@@ -333,10 +332,10 @@ public class WebViewFragment extends Fragment {
         }, 100);
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     private boolean isOnline() {
-        ConnectivityManager cm = requireContext().getSystemService(ConnectivityManager.class);
+        ConnectivityManager cm = (ConnectivityManager) requireContext().getSystemService(Context.CONNECTIVITY_SERVICE);
         if (cm == null) return false;
+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
             Network network = cm.getActiveNetwork();
             if (network == null) return false;
@@ -348,7 +347,6 @@ public class WebViewFragment extends Fragment {
         }
     }
 
-    @RequiresApi(api = Build.VERSION_CODES.M)
     private void showNoInternetUI() {
         webView.setVisibility(View.GONE);
         layoutError.setVisibility(View.GONE);

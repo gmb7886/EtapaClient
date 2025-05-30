@@ -3,15 +3,22 @@ package com.marinov.colegioetapa
 import android.annotation.SuppressLint
 import android.app.AlertDialog
 import android.content.Intent
+import android.content.res.Configuration
+import android.graphics.Color
+import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
+import android.view.View
+import android.view.WindowManager
 import android.webkit.CookieManager
 import android.widget.Button
 import android.widget.ProgressBar
 import android.widget.Toast
 import androidx.appcompat.app.AppCompatActivity
+import androidx.appcompat.app.AppCompatDelegate
 import androidx.appcompat.widget.Toolbar
+import androidx.core.content.ContextCompat
 import androidx.core.content.FileProvider
 import androidx.core.view.ViewCompat
 import androidx.core.view.WindowInsetsCompat
@@ -39,6 +46,7 @@ class SettingsActivity : AppCompatActivity() {
     private var progressBar: ProgressBar? = null
 
     override fun onCreate(savedInstanceState: Bundle?) {
+        configureSystemBarsForLegacyDevices()
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_settings)
 
@@ -55,7 +63,60 @@ class SettingsActivity : AppCompatActivity() {
         supportActionBar?.setDisplayHomeAsUpEnabled(true)
         setupToolbarInsets()
     }
+    private fun configureSystemBarsForLegacyDevices() {
+        // Aplicar apenas para Android 9 (Pie) e versões anteriores
+        if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
+            val isDarkMode = when (AppCompatDelegate.getDefaultNightMode()) {
+                AppCompatDelegate.MODE_NIGHT_YES -> true
+                AppCompatDelegate.MODE_NIGHT_NO -> false
+                else -> {
+                    // Se estiver no modo automático, verificar configuração do sistema
+                    val currentNightMode = resources.configuration.uiMode and Configuration.UI_MODE_NIGHT_MASK
+                    currentNightMode == Configuration.UI_MODE_NIGHT_YES
+                }
+            }
 
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                window.apply {
+                    clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
+                    addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
+
+                    // Android 5.0-5.1: Barras pretas sólidas
+                    if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.LOLLIPOP_MR1) {
+                        statusBarColor = Color.BLACK
+                        navigationBarColor = Color.BLACK
+                    }
+                    // Android 6.0-9.0: Correção para barra de navegação no tema claro
+                    else {
+                        statusBarColor = Color.TRANSPARENT
+
+                        // CORREÇÃO ADICIONADA PARA BARRA DE NAVEGAÇÃO
+                        navigationBarColor = if (isDarkMode) {
+                            // Tema escuro: preto transparente para ícones claros
+                            ContextCompat.getColor(this@SettingsActivity, R.color.nav_bar_dark)
+                        } else {
+                            // Tema claro: branco semi-transparente para ícones escuros
+                            ContextCompat.getColor(this@SettingsActivity, R.color.nav_bar_light)
+                        }
+                    }
+                }
+            }
+
+            // Controle de ícones para barra de status
+            if (isDarkMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                var flags = window.decorView.systemUiVisibility
+                flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+                window.decorView.systemUiVisibility = flags
+            }
+
+            // CORREÇÃO ADICIONADA: Controle de ícones para barra de navegação no tema claro
+            if (!isDarkMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                var flags = window.decorView.systemUiVisibility
+                flags = flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                window.decorView.systemUiVisibility = flags
+            }
+        }
+    }
     private fun setupToolbarInsets() {
         ViewCompat.setOnApplyWindowInsetsListener(findViewById(R.id.toolbar)) { v, insets ->
             val statusBarHeight = insets.getInsets(WindowInsetsCompat.Type.statusBars()).top
