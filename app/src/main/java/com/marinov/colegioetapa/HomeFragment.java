@@ -3,6 +3,7 @@ package com.marinov.colegioetapa;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.graphics.drawable.Drawable;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -22,12 +23,17 @@ import android.widget.TextView;
 
 import androidx.annotation.NonNull;
 import androidx.annotation.Nullable;
+import androidx.constraintlayout.widget.ConstraintLayout;
 import androidx.fragment.app.Fragment;
 import androidx.recyclerview.widget.LinearLayoutManager;
 import androidx.recyclerview.widget.RecyclerView;
 import androidx.viewpager2.widget.ViewPager2;
 
 import com.bumptech.glide.Glide;
+import com.bumptech.glide.load.DataSource;
+import com.bumptech.glide.load.engine.GlideException;
+import com.bumptech.glide.request.RequestListener;
+import com.bumptech.glide.request.target.Target;
 import com.google.android.material.button.MaterialButton;
 import com.google.gson.Gson;
 import com.google.gson.reflect.TypeToken;
@@ -62,7 +68,6 @@ public class HomeFragment extends Fragment {
     private static final String HOME_URL = "https://areaexclusiva.colegioetapa.com.br/home";
     private static final String OUT_URL = "https://areaexclusiva.colegioetapa.com.br";
     private TextView txtStuckHint;
-
 
     private boolean isFragmentDestroyed = false;
     private boolean shouldReloadOnResume = false;
@@ -100,7 +105,7 @@ public class HomeFragment extends Fragment {
     public void onDestroyView() {
         super.onDestroyView();
         isFragmentDestroyed = true;
-        handler.removeCallbacksAndMessages(null); // Remove todos os callbacks pendentes
+        handler.removeCallbacksAndMessages(null);
         executor.shutdownNow();
     }
 
@@ -126,22 +131,16 @@ public class HomeFragment extends Fragment {
 
     private void checkInternetAndLoadData() {
         if (hasInternetConnection()) {
-            // 1. Tenta carregar o cache
             if (loadCache()) {
-                // 2. Exibe cache imediatamente
                 showContentState();
                 setupCarousel();
                 setupNews();
-
-                // 3. Busca dados atualizados em segundo plano
                 fetchDataInBackground();
             } else {
-                // 4. Se não há cache, mostra loading e busca dados
                 showLoadingState();
                 fetchDataInBackground();
             }
         } else {
-            // 5. Offline: não usa cache, mostra estado offline
             showOfflineState();
         }
     }
@@ -168,7 +167,6 @@ public class HomeFragment extends Fragment {
     private void updateUIWithNewData() {
         if (isFragmentDestroyed) return;
 
-        // Atualiza os adaptadores se necessário
         if (viewPager.getAdapter() != null) {
             viewPager.getAdapter().notifyDataSetChanged();
         }
@@ -176,7 +174,6 @@ public class HomeFragment extends Fragment {
             newsRecyclerView.getAdapter().notifyDataSetChanged();
         }
 
-        // Se não havia cache, agora exibe o conteúdo
         if (loadingContainer.getVisibility() == View.VISIBLE) {
             showContentState();
             setupCarousel();
@@ -191,7 +188,7 @@ public class HomeFragment extends Fragment {
         return Jsoup.connect(HOME_URL)
                 .userAgent("Mozilla/5.0")
                 .header("Cookie", cookies != null ? cookies : "")
-                .timeout(10000) // Timeout de 10 segundos
+                .timeout(10000)
                 .get();
     }
 
@@ -207,7 +204,6 @@ public class HomeFragment extends Fragment {
         processCarousel(doc, newCarousel);
         processNews(doc, newNews);
 
-        // Atualiza as listas principais
         carouselItems.clear();
         carouselItems.addAll(newCarousel);
 
@@ -217,26 +213,21 @@ public class HomeFragment extends Fragment {
 
     private void handleInvalidSession() {
         if (isFragmentDestroyed) return;
-
         navigateToWebView(OUT_URL);
         shouldReloadOnResume = true;
     }
 
     private void handleDataFetchError(IOException e) {
         if (isFragmentDestroyed) return;
-
         Log.e("HomeFragment", "Erro ao buscar dados: " + e.getMessage());
 
-        // Se estávamos no estado de loading e não temos dados
         if (loadingContainer.getVisibility() == View.VISIBLE &&
                 carouselItems.isEmpty() && newsItems.isEmpty()) {
-
             navigateToWebView(OUT_URL);
             shouldReloadOnResume = true;
         }
     }
 
-    // Métodos de cache (SharedPreferences + Gson)
     private void saveCache() {
         if (isFragmentDestroyed) return;
         Context context = getContext();
@@ -266,10 +257,8 @@ public class HomeFragment extends Fragment {
         String newsJson = prefs.getString(KEY_NEWS_ITEMS, null);
 
         if (carouselJson != null && newsJson != null) {
-            Type carouselType = new TypeToken<ArrayList<CarouselItem>>() {
-            }.getType();
-            Type newsType = new TypeToken<ArrayList<NewsItem>>() {
-            }.getType();
+            Type carouselType = new TypeToken<ArrayList<CarouselItem>>() {}.getType();
+            Type newsType = new TypeToken<ArrayList<NewsItem>>() {}.getType();
 
             List<CarouselItem> cachedCarousel = gson.fromJson(carouselJson, carouselType);
             List<NewsItem> cachedNews = gson.fromJson(newsJson, newsType);
@@ -374,7 +363,7 @@ public class HomeFragment extends Fragment {
             loadingContainer.setVisibility(View.VISIBLE);
             contentContainer.setVisibility(View.GONE);
             layoutSemInternet.setVisibility(View.GONE);
-            txtStuckHint.setVisibility(View.VISIBLE); // Sempre visível com o loading
+            txtStuckHint.setVisibility(View.VISIBLE);
         });
     }
 
@@ -384,7 +373,7 @@ public class HomeFragment extends Fragment {
             loadingContainer.setVisibility(View.GONE);
             contentContainer.setVisibility(View.VISIBLE);
             layoutSemInternet.setVisibility(View.GONE);
-            txtStuckHint.setVisibility(View.GONE); // Esconder quando mostrar conteúdo
+            txtStuckHint.setVisibility(View.GONE);
         });
     }
 
@@ -394,7 +383,7 @@ public class HomeFragment extends Fragment {
             loadingContainer.setVisibility(View.GONE);
             contentContainer.setVisibility(View.GONE);
             layoutSemInternet.setVisibility(View.VISIBLE);
-            txtStuckHint.setVisibility(View.GONE); // Esconder no estado offline
+            txtStuckHint.setVisibility(View.GONE);
         });
     }
 
@@ -419,16 +408,22 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupCarousel() {
+        ViewGroup.LayoutParams params = viewPager.getLayoutParams();
+        int screenWidth = getResources().getDisplayMetrics().widthPixels;
+        params.height = (int) (screenWidth * 0.5625); // Proporção 16:9
+        viewPager.setLayoutParams(params);
+
         viewPager.setAdapter(new CarouselAdapter());
-        viewPager.setPageTransformer((page, position) -> {
-            float offset = position * -60f;
-            page.setTranslationX(offset);
-        });
+        viewPager.setPadding(0, 0, 0, 0);
+        viewPager.setClipToPadding(false);
+        viewPager.setClipChildren(false);
+        viewPager.setOffscreenPageLimit(3);
     }
 
     private void setupNews() {
         newsRecyclerView.setAdapter(new NewsAdapter());
     }
+
 
     private class CarouselAdapter extends RecyclerView.Adapter<CarouselViewHolder> {
         @NonNull
@@ -563,12 +558,8 @@ public class HomeFragment extends Fragment {
 
     public void killFragment() {
         if (getParentFragmentManager().isDestroyed()) return;
-
-        // Cancelar todas as operações pendentes
         handler.removeCallbacksAndMessages(null);
         executor.shutdownNow();
-
-        // Remover o fragmento
         getParentFragmentManager().beginTransaction()
                 .remove(this)
                 .commitAllowingStateLoss();

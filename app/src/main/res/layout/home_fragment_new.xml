@@ -54,7 +54,7 @@
             android:layout_width="64dp"
             android:layout_height="64dp"
             android:src="@drawable/ic_no_connection"
-            android:tint="?attr/colorOnSurface"/>
+            app:tint="?attr/colorOnSurface" />
 
         <TextView
             android:layout_width="wrap_content"
@@ -86,35 +86,43 @@
             android:orientation="vertical"
             android:padding="8dp">
 
-            <!-- Carrossel -->
+            <!-- Carrossel - Altura responsiva -->
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPager"
                 android:layout_width="match_parent"
                 android:layout_height="200dp"
                 android:clipToPadding="false"
-                android:padding="0dp"
+                android:padding="8dp"
                 android:overScrollMode="never"
                 tools:itemCount="5" />
 
-            <!-- Notícias -->
-            <TextView
+            <!-- Notícias - Layout melhorado -->
+            <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:text="Notícias"
-                android:textColor="?attr/colorOnSurface"
-                android:textSize="20sp"
-                android:layout_marginStart="8dp"
+                android:orientation="vertical"
                 android:layout_marginTop="16dp"
-                android:layout_marginBottom="8dp" />
+                android:padding="8dp">
 
-            <androidx.recyclerview.widget.RecyclerView
-                android:id="@+id/newsRecyclerView"
-                android:layout_width="match_parent"
-                android:layout_height="150dp"
-                android:orientation="horizontal"
-                app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
-                tools:listitem="@layout/news_item" />
+                <TextView
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:text="Notícias"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="20sp"
+                    android:layout_marginBottom="8dp"/>
+
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/newsRecyclerView"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:minHeight="120dp"
+                    android:orientation="horizontal"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    tools:listitem="@layout/news_item"
+                    android:nestedScrollingEnabled="false"
+                    />
+            </LinearLayout>
         </LinearLayout>
     </ScrollView>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
