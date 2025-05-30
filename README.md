@@ -1,6 +1,6 @@
 # Etapa Client #
 
-<img src="https://github.com/gmb7886/EtapaClient/blob/master/app/src/main/ic_launcher-playstore.png" width="200"/> 
+<img src="https://github.com/gmb7886/EtapaClient/blob/main/app/src/main/ic_launcher-playstore.png" width="200"/> 
 
 Meu cliente alternativo para acessar https://areaexclusiva.colegioetapa.com.br/ em dispositivos Android, com funcionalidades extras ao aplicativo original.
 
