@@ -4,10 +4,13 @@
 
 Meu cliente alternativo para acessar https://areaexclusiva.colegioetapa.com.br/ em dispositivos Android, com funcionalidades extras ao aplicativo original.
 
+<img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/tablet_1.png" width="500"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/tablet_2.png" width="500"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/tablet_3.png" width="500"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/tablet_4.png" width="500"/>
+<img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_1.jpg" width="300"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_2.jpg" width="300"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_3.jpg" width="300"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_4.jpg" width="300"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_5.jpg" width="300"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_7.jpg" width="300"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_8.jpg" width="300"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_9.jpg" width="300"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_10.jpg" width="300"/>
+
 ✅ FUNCIONALIDADES:
   1. Acesso ao Etapa Digital;
   2. Acesso ao Etapa Link;
-  3. Gráficos de desempenho PG e simuladaos;
+  3. Gráficos de desempenho PG e simulados;
   4. Download das provas, gabaritos e resoluções;
   5. Amigável para tablets (pode funcionar na horizontal);
   6. Interface Material You;
