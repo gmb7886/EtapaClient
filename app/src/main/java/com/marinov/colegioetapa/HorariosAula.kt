@@ -24,9 +24,8 @@ import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
-import org.jsoup.nodes.Document
 import org.jsoup.nodes.Element
-import org.jsoup.select.Elements
+import androidx.core.content.edit
 
 class HorariosAula : Fragment() {
 
@@ -209,7 +208,7 @@ class HorariosAula : Fragment() {
         private val prefs: SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
         fun saveHtml(html: String) {
-            prefs.edit().putString(KEY_HTML, html).apply()
+            prefs.edit { putString(KEY_HTML, html) }
         }
 
         fun loadHtml(): String? {

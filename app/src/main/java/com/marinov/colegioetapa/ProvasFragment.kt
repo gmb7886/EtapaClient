@@ -118,7 +118,9 @@ class ProvasFragment : Fragment() {
     @SuppressLint("SetJavaScriptEnabled")
     private fun checkAuthentication() {
         val authCheckWebView = WebView(requireContext()).apply {
-            CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
+            }
             settings.apply {
                 javaScriptEnabled = true
                 domStorageEnabled = true

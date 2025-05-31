@@ -129,7 +129,9 @@ public class EADFragment extends Fragment {
     @SuppressLint("SetJavaScriptEnabled")
     private void checkAuthentication() {
         WebView authCheckWebView = new WebView(requireContext());
-        CookieManager.getInstance().setAcceptThirdPartyCookies(authCheckWebView, true);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager.getInstance().setAcceptThirdPartyCookies(authCheckWebView, true);
+        }
         WebSettings authSettings = authCheckWebView.getSettings();
         authSettings.setJavaScriptEnabled(true);
         authSettings.setDomStorageEnabled(true);
@@ -184,7 +186,9 @@ public class EADFragment extends Fragment {
         settings.setDomStorageEnabled(true);
         settings.setLoadWithOverviewMode(true);
         settings.setUseWideViewPort(true);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        }
         settings.setSupportZoom(false);
         settings.setBuiltInZoomControls(false);
         settings.setDisplayZoomControls(false);
@@ -253,15 +257,19 @@ public class EADFragment extends Fragment {
 
             @Override
             public void onReceivedError(WebView view, WebResourceRequest request, WebResourceError error) {
-                if (!pageLoaded && request.isForMainFrame()) {
-                    showNoInternetUI();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    if (!pageLoaded && request.isForMainFrame()) {
+                        showNoInternetUI();
+                    }
                 }
             }
 
             @Override
             public void onReceivedHttpError(WebView view, WebResourceRequest request, WebResourceResponse errorResponse) {
-                if (!pageLoaded && request.isForMainFrame()) {
-                    showNoInternetUI();
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    if (!pageLoaded && request.isForMainFrame()) {
+                        showNoInternetUI();
+                    }
                 }
             }
         });

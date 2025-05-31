@@ -174,7 +174,9 @@ public class WebViewFragment extends Fragment {
         settings.setUseWideViewPort(true);
         settings.setBuiltInZoomControls(true);
         settings.setDisplayZoomControls(false);
-        settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        }
 
         webView.addJavascriptInterface(new JsInterface(), "AndroidAutofill");
         applyWebViewDarkMode(settings);
@@ -362,11 +364,15 @@ public class WebViewFragment extends Fragment {
     }
 
     private void restoreCookies() {
-        CookieManager.getInstance().flush();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager.getInstance().flush();
+        }
     }
 
     private void saveCookies() {
-        CookieManager.getInstance().flush();
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            CookieManager.getInstance().flush();
+        }
     }
 
     private void checkStoragePermissions() {

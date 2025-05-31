@@ -158,8 +158,12 @@ class SettingsActivity : AppCompatActivity() {
         }
 
         btnClear.setOnClickListener {
-            CookieManager.getInstance().removeAllCookies(null)
-            CookieManager.getInstance().flush()
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                CookieManager.getInstance().removeAllCookies(null)
+            }
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                CookieManager.getInstance().flush()
+            }
             clearAllCacheData()
             Toast.makeText(this, "Base de dados apagada com sucesso!", Toast.LENGTH_SHORT).show()
         }

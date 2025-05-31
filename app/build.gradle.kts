@@ -12,7 +12,7 @@ android {
         minSdk = 21
         targetSdk = 35
         versionCode = 1
-        versionName = "9.1"
+        versionName = "9.2"
         buildConfigField("String", "EAD_URL", "\"${project.properties["EAD_URL"]}\"")
         buildConfigField("String", "GITHUB_PAT", "\"${project.properties["GITHUB_PAT"]}\"")
     }
@@ -47,14 +47,11 @@ dependencies {
     implementation(libs.navigation.fragment)
     implementation(libs.navigation.ui)
     implementation(libs.webkit)
-    implementation(libs.tools.core)
     implementation(libs.core.ktx)
-    //implementation(libs.compose.foundation)
     testImplementation(libs.junit)
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation (libs.material)
-    implementation (libs.core.splashscreen)
     implementation ("androidx.webkit:webkit:1.8.0")
     implementation ("org.jsoup:jsoup:1.14.3")
     implementation ("com.google.code.gson:gson:2.8.9")
