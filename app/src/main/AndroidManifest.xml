@@ -58,23 +58,6 @@
             </intent-filter>
         </activity>
 
-        <!-- WebActivity para conteúdo externo -->
-        <activity
-            android:name=".WebActivity"
-            android:exported="true">
-            <intent-filter>
-                <action android:name="android.intent.action.VIEW" />
-                <category android:name="android.intent.category.DEFAULT" />
-                <category android:name="android.intent.category.BROWSABLE" />
-                <data android:scheme="http" android:host="areaexclusiva.colegioetapa.com.br" />
-                <data android:scheme="https" android:host="areaexclusiva.colegioetapa.com.br" />
-                <data android:scheme="http" android:host="material.etapadigital.com.br" />
-                <data android:scheme="https" android:host="material.etapadigital.com.br" />
-                <data android:scheme="http" android:host="www.etapalink.com.br" />
-                <data android:scheme="https" android:host="www.etapalink.com.br" />
-            </intent-filter>
-        </activity>
-
         <activity
             android:name=".SettingsActivity"
             android:exported="false"
