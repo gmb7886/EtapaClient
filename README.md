@@ -8,8 +8,8 @@ Meu cliente alternativo para acessar https://areaexclusiva.colegioetapa.com.br/ 
 <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/tablet_3.png" width="300"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/tablet_4.png" width="300"/>
 
 <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_1.jpg" width="180"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_2.jpg" width="180"/> 
-<img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_3.jpg" width="180"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_4.jpg" width="180"/> 
-<img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_5.jpg" width="180"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_7.jpg" width="180"/> 
+<img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_3.jpg" width="180"/> 
+<img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_4.jpg" width="180"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_5.jpg" width="180"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_7.jpg" width="180"/> 
 <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_8.jpg" width="180"/> <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_9.jpg" width="180"/> 
 <img src="https://github.com/gmb7886/EtapaClient/blob/main/app/imagens/phone_10.jpg" width="180"/>
 
