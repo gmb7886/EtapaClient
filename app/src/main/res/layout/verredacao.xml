@@ -39,131 +39,151 @@
                     android:maxLines="3"
                     android:ellipsize="end" />
 
-                <!-- Tabela de Informações -->
+                <!-- Aviso de correção pendente -->
                 <TextView
+                    android:id="@+id/txtPendente"
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Informações"
-                    android:textAppearance="?attr/textAppearanceSubtitle1"
-                    android:textStyle="bold"
-                    android:paddingStart="16dp"
-                    android:paddingTop="16dp"
-                    android:paddingEnd="16dp"
-                    android:paddingBottom="8dp" />
-
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/AppCardView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cardElevation="0dp"
-                    android:layout_marginBottom="16dp">
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recycler_tabela_info"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="8dp"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Tabela de Avaliação -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Avaliação"
-                    android:textAppearance="?attr/textAppearanceSubtitle1"
-                    android:textStyle="bold"
-                    android:paddingStart="16dp"
-                    android:paddingTop="16dp"
-                    android:paddingEnd="16dp"
-                    android:paddingBottom="8dp" />
-
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/AppCardView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cardElevation="0dp"
-                    android:layout_marginBottom="16dp">
-
-                    <androidx.recyclerview.widget.RecyclerView
-                        android:id="@+id/recycler_tabela_avaliacao"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:orientation="vertical"
-                        android:padding="8dp"
-                        app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Comentário Geral -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Comentário Geral"
-                    android:textAppearance="?attr/textAppearanceSubtitle1"
-                    android:textStyle="bold"
-                    android:paddingStart="16dp"
-                    android:paddingTop="16dp"
-                    android:paddingEnd="16dp"
-                    android:paddingBottom="8dp" />
-
-                <com.google.android.material.card.MaterialCardView
-                    style="@style/AppCardView"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    app:cardElevation="2dp"
-                    android:layout_marginBottom="16dp">
-
-                    <TextView
-                        android:id="@+id/comentario_geral"
-                        android:layout_width="match_parent"
-                        android:layout_height="wrap_content"
-                        android:padding="16dp"
-                        android:textAppearance="?attr/textAppearanceBody1"
-                        android:textColor="?attr/colorOnSurface" />
-
-                </com.google.android.material.card.MaterialCardView>
-
-                <!-- Imagem da Redação -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Redação"
-                    android:textAppearance="?attr/textAppearanceSubtitle1"
-                    android:textStyle="bold"
-                    android:paddingStart="16dp"
-                    android:paddingTop="16dp"
-                    android:paddingEnd="16dp"
-                    android:paddingBottom="8dp" />
-
-                <ImageView
-                    android:id="@+id/imagem_redacao"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:adjustViewBounds="true"
-                    android:minHeight="500dp"
-                    android:scaleType="fitCenter"
-                    android:visibility="gone" />
-
-                <!-- Pontos a Melhorar -->
-                <TextView
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:text="Pontos a Melhorar"
-                    android:textAppearance="?attr/textAppearanceSubtitle1"
-                    android:textStyle="bold"
-                    android:paddingStart="16dp"
-                    android:paddingTop="16dp"
-                    android:paddingEnd="16dp"
-                    android:paddingBottom="8dp" />
-
-                <androidx.recyclerview.widget.RecyclerView
-                    android:id="@+id/recycler_comentarios"
-                    android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
+                    android:layout_height="0dp"
+                    android:layout_weight="1"
+                    android:gravity="center"
+                    android:text="A correção está pendente."
+                    android:textAppearance="?attr/textAppearanceHeadline6"
                     android:visibility="gone"
-                    tools:listitem="@layout/item_comentario" />
+                    android:padding="16dp"/>
 
+                <!-- Seção de detalhes (oculta quando correção pendente) -->
+                <LinearLayout
+                    android:id="@+id/secao_detalhes"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:orientation="vertical">
+
+                    <!-- Tabela de Informações -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Informações"
+                        android:textAppearance="?attr/textAppearanceSubtitle1"
+                        android:textStyle="bold"
+                        android:paddingStart="16dp"
+                        android:paddingTop="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="8dp" />
+
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/AppCardView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardElevation="0dp"
+                        android:layout_marginBottom="16dp">
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recycler_tabela_info"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="8dp"
+                            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Tabela de Avaliação -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Avaliação"
+                        android:textAppearance="?attr/textAppearanceSubtitle1"
+                        android:textStyle="bold"
+                        android:paddingStart="16dp"
+                        android:paddingTop="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="8dp" />
+
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/AppCardView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardElevation="0dp"
+                        android:layout_marginBottom="16dp">
+
+                        <androidx.recyclerview.widget.RecyclerView
+                            android:id="@+id/recycler_tabela_avaliacao"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:orientation="vertical"
+                            android:padding="8dp"
+                            app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager" />
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Comentário Geral -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Comentário Geral"
+                        android:textAppearance="?attr/textAppearanceSubtitle1"
+                        android:textStyle="bold"
+                        android:paddingStart="16dp"
+                        android:paddingTop="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="8dp" />
+
+                    <com.google.android.material.card.MaterialCardView
+                        style="@style/AppCardView"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        app:cardElevation="2dp"
+                        android:layout_marginBottom="16dp">
+
+                        <TextView
+                            android:id="@+id/comentario_geral"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:padding="16dp"
+                            android:textAppearance="?attr/textAppearanceBody1"
+                            android:textColor="?attr/colorOnSurface" />
+
+                    </com.google.android.material.card.MaterialCardView>
+
+                    <!-- Imagem da Redação -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Redação"
+                        android:textAppearance="?attr/textAppearanceSubtitle1"
+                        android:textStyle="bold"
+                        android:paddingStart="16dp"
+                        android:paddingTop="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="8dp" />
+
+                    <ImageView
+                        android:id="@+id/imagem_redacao"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:adjustViewBounds="true"
+                        android:minHeight="500dp"
+                        android:scaleType="fitCenter"
+                        android:visibility="gone" />
+
+                    <!-- Pontos a Melhorar -->
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="Pontos a Melhorar"
+                        android:textAppearance="?attr/textAppearanceSubtitle1"
+                        android:textStyle="bold"
+                        android:paddingStart="16dp"
+                        android:paddingTop="16dp"
+                        android:paddingEnd="16dp"
+                        android:paddingBottom="8dp" />
+
+                    <androidx.recyclerview.widget.RecyclerView
+                        android:id="@+id/recycler_comentarios"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:visibility="gone"
+                        tools:listitem="@layout/item_comentario" />
+
+                </LinearLayout>
             </LinearLayout>
         </androidx.core.widget.NestedScrollView>
     </LinearLayout>

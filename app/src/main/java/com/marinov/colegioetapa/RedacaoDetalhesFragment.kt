@@ -32,6 +32,7 @@ class RedacaoDetalhesFragment : Fragment() {
         const val KEY_CACHE = "cache_html_redacao_detalhes"
         // Seletores
         const val TITULO_SELECTOR = "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > div > div.card-header.bg-soft-blue.border-left-blue.text-blue.rounded > div > span.d-none.d-sm-inline-block"
+        const val ALERTA_PENDENTE_SELECTOR = "div.alert.alert-info"
         const val TABELA_INFO_SELECTOR = "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > div > div.card-body > div:nth-child(1) > table"
         const val TABELA_AVALIACAO_SELECTOR = "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > div > div.card-body > div:nth-child(2) > table"
         const val COMENTARIO_GERAL_SELECTOR = "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > div > div.card-body > div:nth-child(3) > div.card-body"
@@ -50,6 +51,8 @@ class RedacaoDetalhesFragment : Fragment() {
     private lateinit var imagemRedacao: android.widget.ImageView
     private lateinit var recyclerComentarios: RecyclerView
     private lateinit var txtSemDados: TextView
+    private lateinit var txtPendente: TextView
+    private lateinit var secaoDetalhes: View
 
     private var elementoCriticoPresente = false
     private var url: String = ""
@@ -79,6 +82,8 @@ class RedacaoDetalhesFragment : Fragment() {
         imagemRedacao = root.findViewById(R.id.imagem_redacao)
         recyclerComentarios = root.findViewById(R.id.recycler_comentarios)
         txtSemDados = root.findViewById(R.id.txtSemDados)
+        txtPendente = root.findViewById(R.id.txtPendente)
+        secaoDetalhes = root.findViewById(R.id.secao_detalhes)
 
         // Configurar LayoutManagers para as tabelas
         recyclerTabelaInfo.layoutManager = LinearLayoutManager(requireContext())
@@ -163,6 +168,21 @@ class RedacaoDetalhesFragment : Fragment() {
         // Tema
         val tituloElement = doc.selectFirst(TITULO_SELECTOR)
         tema.text = tituloElement?.text() ?: ""
+
+        // Verificar se a correção está pendente
+        val alertaPendente = doc.selectFirst(ALERTA_PENDENTE_SELECTOR)
+        val correcaoPendente = alertaPendente?.text()?.contains("A correção está pendente.") == true
+
+        if (correcaoPendente) {
+            // Modo correção pendente: exibir apenas o tema e aviso
+            secaoDetalhes.visibility = View.GONE
+            txtPendente.visibility = View.VISIBLE
+            return
+        }
+
+        // Modo normal: exibir todos os detalhes
+        secaoDetalhes.visibility = View.VISIBLE
+        txtPendente.visibility = View.GONE
 
         // Tabela de Informações
         val infoTable = doc.selectFirst(TABELA_INFO_SELECTOR)
@@ -262,6 +282,7 @@ class RedacaoDetalhesFragment : Fragment() {
         contentLayout.visibility = View.GONE
         telaOffline.visibility = View.GONE
         txtSemDados.visibility = View.GONE
+        txtPendente.visibility = View.GONE
     }
 
     private fun exibirConteudoOnline() {
@@ -276,6 +297,7 @@ class RedacaoDetalhesFragment : Fragment() {
         contentLayout.visibility = View.GONE
         telaOffline.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
+        txtPendente.visibility = View.GONE
     }
 
     private fun exibirSemDados() {
@@ -283,6 +305,7 @@ class RedacaoDetalhesFragment : Fragment() {
         contentLayout.visibility = View.GONE
         telaOffline.visibility = View.GONE
         txtSemDados.visibility = View.VISIBLE
+        txtPendente.visibility = View.GONE
     }
 
     private fun isOnline(): Boolean {
@@ -342,7 +365,6 @@ class RedacaoDetalhesFragment : Fragment() {
                 tvNota.text = item.nota
 
                 if (item.isHeader) {
-                    // Usa a versão compatível com API >= 21: setTextAppearance(Context, styleRes)
                     tvCriterio.setTextAppearance(holder.itemView.context, com.google.android.material.R.style.TextAppearance_MaterialComponents_Subtitle1)
                     tvCriterio.setTypeface(tvCriterio.typeface, Typeface.BOLD)
                     tvNota.setTextAppearance(holder.itemView.context, com.google.android.material.R.style.TextAppearance_MaterialComponents_Subtitle1)
