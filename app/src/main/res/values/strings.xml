@@ -1,0 +1,26 @@
+<resources>
+    <string name="app_name">Colégio Etapa</string>
+    <string name="action_settings">Settings</string>
+    <!-- Strings used for fragments for navigation -->
+    <string name="first_fragment_label">First Fragment</string>
+    <string name="second_fragment_label">Second Fragment</string>
+    <string name="next">Next</string>
+    <string name="previous">Previous</string>
+    <string name="desc_tabela_notas">Tabela de notas, deslize para ver todas as colunas</string>
+    <string name="prompt_conjunto">Selecione o conjunto</string>
+    <string name="prompt_materia">Selecione a matéria</string>
+    <string name="provas_e_gabaritos">Provas e Gabaritos</string>
+    <string name="selecione_conjunto_materia">Selecione o conjunto e a matéria</string>
+    <string name="buscar">Buscar</string>
+    <string name="modo_offline">Modo offline. Conecte-se para buscar novas provas.</string>
+    <string name="sem_provas_disponiveis">Não há provas disponíveis para a seleção atual.</string>
+    <string name="sem_dados">Não foi possível carregar os dados.</string>
+    <string name="prova">Prova</string>
+    <string name="gabarito">Gabarito</string>
+    <!-- Adicione estas strings -->
+    <string name="sem_conexao_mensagem">Você está offline. Conecte-se à internet para acessar as provas.</string>
+    <string name="tentar_novamente">Tentar novamente</string>
+
+
+    <string name="sem_redacoes_disponiveis">Nenhuma redação encontrada.</string>
+</resources>
