@@ -295,6 +295,10 @@ public class WebViewFragment extends Fragment {
                 "var alunoTab=document.querySelector('#aluno-tab'); if(alunoTab) alunoTab.remove();" +
                 "var login=document.querySelector('#login'); if(login) login.remove();" +
                 "var cardElement=document.querySelector('body > div.row.mx-0.pt-4 > div > div.card.mt-4.border-radius-card.border-0.shadow'); if(cardElement) cardElement.remove();" +
+                "var backButton = document.querySelector('#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > div:nth-child(1) > div.card-header.bg-soft-blue.border-left-blue.text-blue.rounded > i.fas.fa-chevron-left.btn-outline-primary.py-1.px-2.rounded.mr-2');" +
+                "if (backButton) backButton.remove();" +
+                "var darkHeader = document.querySelector('#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0 > div.card-header.bg-dark.rounded.d-flex.align-items-center.justify-content-center');" +
+                "if (darkHeader) darkHeader.remove();" +
                 "var style=document.createElement('style');" +
                 "style.type='text/css';" +
                 "style.appendChild(document.createTextNode('::-webkit-scrollbar{display:none;}'));" +

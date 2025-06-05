@@ -1,11 +1,10 @@
+// Arquivo: GraficosFragment.kt
 package com.marinov.colegioetapa
 
 import android.annotation.SuppressLint
 import android.content.Context
-import android.content.Intent
 import android.net.ConnectivityManager
 import android.net.NetworkInfo
-import android.net.Uri
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -34,7 +33,8 @@ class GraficosFragment : Fragment() {
         const val URL_BASE = "https://areaexclusiva.colegioetapa.com.br/provas/relatorio-evolucao"
         const val PREFS = "graficos_prefs"
         const val KEY_CACHE = "cache_html_graficos"
-        const val ELEMENTO_CRITICO_SELECTOR = "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > div > table"
+        const val ELEMENTO_CRITICO_SELECTOR =
+            "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > div > table"
     }
 
     private lateinit var recyclerGraficos: RecyclerView
@@ -252,7 +252,7 @@ class GraficosFragment : Fragment() {
         recyclerGraficos.layoutManager = LinearLayoutManager(requireContext())
         adapter = GraficosAdapter(emptyList()) { graficoItem ->
             if (graficoItem.link.isNotBlank()) {
-                abrirLinkNoNavegador(graficoItem.link)
+                abrirWebViewFragment(graficoItem.link)
             } else {
                 Toast.makeText(requireContext(), "Link não disponível", Toast.LENGTH_SHORT).show()
             }
@@ -260,13 +260,18 @@ class GraficosFragment : Fragment() {
         recyclerGraficos.adapter = adapter
     }
 
-    private fun abrirLinkNoNavegador(url: String) {
-        try {
-            val intent = Intent(Intent.ACTION_VIEW, Uri.parse(url))
-            startActivity(intent)
-        } catch (e: Exception) {
-            Toast.makeText(requireContext(), "Não foi possível abrir o link", Toast.LENGTH_SHORT).show()
+    /**
+     * Navega para WebViewFragment, passando a URL do vestibular via argumento.
+     * Substitui o container principal (nav_host_fragment) pelo novo fragment.
+     */
+    private fun abrirWebViewFragment(url: String) {
+        val webViewFragment = WebViewFragment().apply {
+            arguments = WebViewFragment.createArgs(url)
         }
+        requireActivity().supportFragmentManager.beginTransaction()
+            .replace(R.id.nav_host_fragment, webViewFragment)
+            .addToBackStack(null)
+            .commit()
     }
 
     private fun exibirCarregando() {

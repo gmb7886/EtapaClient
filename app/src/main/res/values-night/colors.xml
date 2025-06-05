@@ -23,4 +23,11 @@
     <color name="fundocartao">#000000</color>
     <color name="badge_text_normal">#FDFDFD</color>
     <color name="badge_text_recuperacao">#000000</color>
+    <color name="faixaA">#33CC00</color>
+    <color name="faixaB">#0000CC</color>
+    <color name="faixaCp">#006DCC</color>
+    <color name="faixaCm">#999900</color>
+    <color name="faixaD">#CC5200</color>
+    <color name="faixaE">#CC0000</color>
+    <color name="faixaDefault">#888888</color>
 </resources>
