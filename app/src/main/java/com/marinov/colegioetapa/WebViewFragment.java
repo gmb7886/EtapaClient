@@ -76,7 +76,6 @@ public class WebViewFragment extends Fragment {
     private LinearLayout layoutError;
     private LinearLayout layoutSemInternet;
     private MaterialButton btnTentarNovamente;
-    private OnBackPressedCallback onBackPressedCallback;
     private SharedPreferences sharedPrefs;
 
     @Override
@@ -112,7 +111,7 @@ public class WebViewFragment extends Fragment {
     @Override
     public void onViewCreated(@NonNull View view, @Nullable Bundle savedInstanceState) {
         super.onViewCreated(view, savedInstanceState);
-        onBackPressedCallback = new OnBackPressedCallback(true) {
+        OnBackPressedCallback onBackPressedCallback = new OnBackPressedCallback(true) {
             @Override
             public void handleOnBackPressed() {
                 if (webView.canGoBack()) {

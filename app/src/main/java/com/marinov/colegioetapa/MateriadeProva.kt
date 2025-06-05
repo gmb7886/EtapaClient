@@ -125,7 +125,7 @@ class MateriadeProva : Fragment() {
         return try {
             requireContext().packageManager.getApplicationInfo(packageName, 0)
             true
-        } catch (e: PackageManager.NameNotFoundException) {
+        } catch (_: PackageManager.NameNotFoundException) {
             false
         }
     }
@@ -150,7 +150,7 @@ class MateriadeProva : Fragment() {
             val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val netInfo: NetworkInfo? = cm.activeNetworkInfo
             netInfo != null && netInfo.isConnected
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }

@@ -117,7 +117,7 @@ class NotasFragment : Fragment() {
                         val value = valText.toDouble()
                         sums[colIndex] += value
                         counts[colIndex]++
-                    } catch (e: NumberFormatException) {
+                    } catch (_: NumberFormatException) {
                         // Ignore non-numeric values
                     }
                 }

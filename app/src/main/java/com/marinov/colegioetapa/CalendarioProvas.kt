@@ -33,6 +33,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import androidx.core.content.edit
 
 class CalendarioProvas : Fragment() {
 
@@ -166,7 +167,7 @@ class CalendarioProvas : Fragment() {
                 else -> false
             }.also {
                 // Salvar preferência
-                prefs.edit().putInt(KEY_FILTRO, filtroAtual).apply()
+                prefs.edit { putInt(KEY_FILTRO, filtroAtual) }
                 // Aplicar filtro
                 adapter.aplicarFiltro(filtroAtual)
             }
@@ -265,7 +266,7 @@ class CalendarioProvas : Fragment() {
                     verificarCache()
                     exibirBarraOffline()
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 progressBar.visibility = View.GONE
                 verificarCache()
                 exibirBarraOffline()
@@ -304,7 +305,7 @@ class CalendarioProvas : Fragment() {
             val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val netInfo: NetworkInfo? = cm.activeNetworkInfo
             netInfo != null && netInfo.isConnected
-        } catch (e: Exception) {
+        } catch (_: Exception) {
             false
         }
     }
@@ -364,12 +365,6 @@ class CalendarioProvas : Fragment() {
                 txtSemProvas.visibility = View.GONE
                 recyclerProvas.visibility = View.VISIBLE
             }
-        }
-
-        @SuppressLint("NotifyDataSetChanged")
-        fun updateData(newItems: List<ProvaItem>) {
-            items = newItems
-            notifyDataSetChanged()
         }
 
         override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): ViewHolder {
@@ -438,17 +433,17 @@ class CalendarioProvas : Fragment() {
         private val prefs: SharedPreferences = context.getSharedPreferences(PREFS, Context.MODE_PRIVATE)
 
         fun salvarProvas(html: String, mes: Int) {
-            prefs.edit()
-                .putString("$KEY_BASE$mes", html)
-                .remove("$KEY_SEM_PROVAS$mes")
-                .apply()
+            prefs.edit {
+                putString("$KEY_BASE$mes", html)
+                    .remove("$KEY_SEM_PROVAS$mes")
+            }
         }
 
         fun salvarMesSemProvas(mes: Int) {
-            prefs.edit()
-                .putBoolean("$KEY_SEM_PROVAS$mes", true)
-                .remove("$KEY_BASE$mes")
-                .apply()
+            prefs.edit {
+                putBoolean("$KEY_SEM_PROVAS$mes", true)
+                    .remove("$KEY_BASE$mes")
+            }
         }
 
         fun loadHtml(mes: Int): String? {

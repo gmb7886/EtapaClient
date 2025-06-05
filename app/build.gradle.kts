@@ -12,7 +12,7 @@ android {
         minSdk = 21
         targetSdk = 35
         versionCode = 1
-        versionName = "11.3"
+        versionName = "11.4"
         buildConfigField("String", "EAD_URL", "\"${project.properties["EAD_URL"]}\"")
         buildConfigField("String", "GITHUB_PAT", "\"${project.properties["GITHUB_PAT"]}\"")
     }
@@ -52,16 +52,16 @@ dependencies {
     androidTestImplementation(libs.ext.junit)
     androidTestImplementation(libs.espresso.core)
     implementation (libs.material)
-    implementation ("androidx.webkit:webkit:1.8.0")
-    implementation ("org.jsoup:jsoup:1.14.3")
-    implementation ("com.google.code.gson:gson:2.8.9")
-    implementation ("androidx.work:work-runtime-ktx:2.8.1")
-    implementation ("com.google.guava:listenablefuture:1.0")
-    implementation ("com.squareup.retrofit2:retrofit:2.9.0")
-    implementation ("com.squareup.retrofit2:converter-gson:2.9.0")
-    implementation ("com.squareup.okhttp3:logging-interceptor:4.9.3")
-    implementation ("com.google.guava:guava:31.0.1-android")
-    implementation ("com.github.bumptech.glide:glide:4.13.2")
-    implementation ("com.google.code.gson:gson:2.10.1")
-    annotationProcessor ("com.github.bumptech.glide:compiler:4.12.0")
+    implementation (libs.webkit.v180)
+    implementation (libs.jsoup)
+    implementation (libs.gson)
+    implementation (libs.work.runtime.ktx)
+    implementation (libs.listenablefuture)
+    implementation (libs.retrofit)
+    implementation (libs.converter.gson)
+    implementation (libs.logging.interceptor)
+    implementation (libs.guava)
+    implementation (libs.glide)
+    implementation (libs.gson.v2101)
+    annotationProcessor (libs.compiler)
 }

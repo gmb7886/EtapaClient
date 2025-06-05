@@ -26,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import androidx.core.content.edit
 
 class GraficosFragment : Fragment() {
 
@@ -229,9 +230,9 @@ class GraficosFragment : Fragment() {
     }
 
     private fun salvarCache(html: String) {
-        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(KEY_CACHE, html)
-            .apply()
+        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
+            putString(KEY_CACHE, html)
+        }
     }
 
     private fun carregarCache() {
@@ -298,6 +299,7 @@ class GraficosFragment : Fragment() {
         progressBar.visibility = View.GONE
     }
 
+    @SuppressLint("SetTextI18n")
     private fun exibirMensagemSemGraficos() {
         recyclerGraficos.visibility = View.GONE
         txtSemGraficos.text = "Nenhum relatório encontrado."
@@ -346,6 +348,7 @@ class GraficosFragment : Fragment() {
             return ViewHolder(view)
         }
 
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
             holder.vestibular.text = item.vestibular

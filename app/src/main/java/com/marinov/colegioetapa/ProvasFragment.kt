@@ -5,7 +5,6 @@ import android.app.DownloadManager
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.net.Uri
 import android.os.AsyncTask
 import android.os.Build
 import android.os.Bundle
@@ -24,6 +23,7 @@ import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.widget.SearchView
+import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -117,7 +117,7 @@ class ProvasFragment : Fragment() {
 
     @SuppressLint("SetJavaScriptEnabled")
     private fun checkAuthentication() {
-        val authCheckWebView = WebView(requireContext()).apply {
+        WebView(requireContext()).apply {
             CookieManager.getInstance().setAcceptThirdPartyCookies(this, true)
             settings.apply {
                 javaScriptEnabled = true
@@ -208,7 +208,7 @@ class ProvasFragment : Fragment() {
             currentPath = item.path
             startFetch()
         } else {
-            val request = DownloadManager.Request(Uri.parse(item.downloadUrl)).apply {
+            val request = DownloadManager.Request(item.downloadUrl.toUri()).apply {
                 setMimeType("*/*")
                 addRequestHeader("User-Agent", "EtapaApp")
                 setTitle(item.name)
@@ -279,10 +279,12 @@ class ProvasFragment : Fragment() {
         private val fragRef = WeakReference(frag)
         private val githubToken: String = BuildConfig.GITHUB_PAT
 
+        @Deprecated("Deprecated in Java")
         override fun onPreExecute() {
             fragRef.get()?.progressBar?.visibility = View.VISIBLE
         }
 
+        @Deprecated("Deprecated in Java")
         override fun doInBackground(vararg params: String?): List<RepoItem> {
             val path = params[0] ?: ""
             val list = mutableListOf<RepoItem>()
@@ -328,6 +330,7 @@ class ProvasFragment : Fragment() {
             return list
         }
 
+        @Deprecated("Deprecated in Java")
         override fun onPostExecute(result: List<RepoItem>) {
             fragRef.get()?.onFetchCompleted(result)
         }
