@@ -8,10 +8,8 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.net.Uri
 import android.os.Build
 import android.os.Bundle
-import android.widget.Toast
 import android.os.Environment
 import android.util.Log
 import android.view.LayoutInflater
@@ -21,6 +19,7 @@ import android.webkit.CookieManager
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
+import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.core.net.toUri
@@ -186,7 +185,7 @@ class MaterialFragment : Fragment() {
                 } else {
                     showNoInternetUI()
                 }
-            } catch (e: Exception) {
+            } catch (_: Exception) {
                 progressBar.visibility = View.GONE
                 showNoInternetUI()
             }
@@ -281,9 +280,9 @@ class MaterialFragment : Fragment() {
 
     private fun extractFileNameFromUrl(url: String): String {
         return try {
-            Uri.parse(url).lastPathSegment ?: "downloaded_file.pdf"
-        } catch (e: Exception) {
-            "downloaded_file.pdf"
+            url.toUri().lastPathSegment ?: "downloaded_file"
+        } catch (_: Exception) {
+            "downloaded_file"
         }
     }
 
@@ -361,8 +360,8 @@ class MaterialFragment : Fragment() {
 
                 // Sincroniza cookie para o host final (caso mude de domínio)
                 val hostFinal = try {
-                    Uri.parse(finalUrl).host ?: ""
-                } catch (e: Exception) {
+                    finalUrl.toUri().host ?: ""
+                } catch (_: Exception) {
                     ""
                 }
                 if (!sessionCookies.isNullOrEmpty() && hostFinal.isNotBlank()) {
@@ -372,7 +371,6 @@ class MaterialFragment : Fragment() {
                 val request = DownloadManager.Request(finalUrl.toUri())
                     .setTitle(titulo)
                     .setDescription("Baixando arquivo")
-                    .setMimeType("application/pdf")
                     .setNotificationVisibility(DownloadManager.Request.VISIBILITY_VISIBLE_NOTIFY_COMPLETED)
                     .setDestinationInExternalPublicDir(Environment.DIRECTORY_DOWNLOADS, nomeArquivo)
                     .setAllowedOverMetered(true)
@@ -496,18 +494,5 @@ class MaterialFragment : Fragment() {
             notifyDataSetChanged()
         }
 
-        fun filter(query: String?) {
-            val lower = query?.lowercase() ?: ""
-            items = if (lower.isEmpty()) {
-                allItems
-            } else {
-                allItems.filter {
-                    it.name.lowercase().contains(lower) ||
-                            it.dataEnvio.lowercase().contains(lower) ||
-                            it.tipo.lowercase().contains(lower)
-                }
-            }
-            notifyDataSetChanged()
-        }
     }
 }
