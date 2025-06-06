@@ -189,6 +189,8 @@ class SettingsActivity : AppCompatActivity() {
             "KEY_FILTRO",
             "graficos_prefs",
             "cache_html_graficos",
+            "boletim_prefs",
+            "cache_html_boletim",
             "redacao_semanal_prefs",
             "cache_html_redacao_semanal",
             "cache_html_provas"
