@@ -6,7 +6,8 @@
     android:layout_height="match_parent"
     android:background="@color/fundocartao"
     tools:context=".RedacaoDetalhesFragment"
-    android:fitsSystemWindows="true">
+    android:fitsSystemWindows="true"
+    android:paddingBottom="?attr/actionBarSize">
 
     <LinearLayout
         android:id="@+id/contentLayout"
@@ -25,7 +26,11 @@
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:orientation="vertical">
+                android:orientation="vertical"
+                android:paddingBottom="8dp"
+                android:paddingTop="0dp"
+                android:paddingLeft="0dp"
+                android:paddingRight="0dp">
 
                 <!-- Tema -->
                 <TextView
