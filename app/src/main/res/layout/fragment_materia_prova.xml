@@ -24,7 +24,7 @@
         android:id="@+id/barra_compartilhamento"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="72dp"
+        android:layout_marginTop="50dp"
         android:orientation="horizontal"
         android:layout_marginHorizontal="8dp"
         android:visibility="gone"
@@ -75,7 +75,7 @@
     <androidx.core.widget.NestedScrollView
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:layout_marginTop="132dp"
+        android:layout_marginTop="100dp"
         android:paddingHorizontal="16dp"
         android:paddingBottom="8dp"
         app:layout_behavior="@string/appbar_scrolling_view_behavior">

@@ -6,6 +6,7 @@
     android:layout_height="match_parent"
     android:fitsSystemWindows="true"
     android:background="@color/fundocartao"
+    android:paddingBottom="?attr/actionBarSize"
     >
 
     <!-- Layout offline -->
@@ -47,8 +48,10 @@
         android:orientation="vertical"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:padding="8dp"
-        android:paddingBottom="?attr/actionBarSize">
+        android:paddingBottom="8dp"
+        android:paddingTop="0dp"
+        android:paddingLeft="8dp"
+        android:paddingRight="8dp">
 
     <com.google.android.material.card.MaterialCardView
             android:layout_width="match_parent"
