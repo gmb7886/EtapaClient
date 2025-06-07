@@ -20,9 +20,10 @@
             android:orientation="vertical"
             android:padding="16dp"
             android:visibility="gone"
-            app:layout_behavior="@string/appbar_scrolling_view_behavior">
+            app:layout_behavior="@string/appbar_scrolling_view_behavior"
+            android:paddingBottom="?attr/actionBarSize">
 
-            <TextView
+        <TextView
                 android:id="@+id/txtTitulo"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -70,7 +71,8 @@
                 android:id="@+id/webViewProposta"
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/fundocartao"/>
+                android:background="@color/fundocartao"
+                android:paddingBottom="8dp"/>
         </LinearLayout>
     </androidx.core.widget.NestedScrollView>
 

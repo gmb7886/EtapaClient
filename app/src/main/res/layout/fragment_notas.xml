@@ -11,9 +11,10 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:paddingBottom="?attr/actionBarSize">
 
-        <!-- Barra Offline -->
+    <!-- Barra Offline -->
         <LinearLayout
             android:id="@+id/barOffline"
             android:layout_width="match_parent"
@@ -55,9 +56,10 @@
         <!-- Conteúdo Principal -->
         <androidx.core.widget.NestedScrollView
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="match_parent"
+            android:paddingBottom="8dp">
 
-            <HorizontalScrollView
+        <HorizontalScrollView
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:contentDescription="@string/desc_tabela_notas">
