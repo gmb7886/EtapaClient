@@ -76,8 +76,8 @@
         android:layout_height="match_parent"
         android:layout_marginTop="132dp"
         android:paddingHorizontal="16dp"
-        android:paddingBottom="0dp"
-        app:layout_behavior="@string/appbar_scrolling_view_behavior">
+        android:paddingBottom="?attr/actionBarSize">
+    app:layout_behavior="@string/appbar_scrolling_view_behavior">
 
     <TextView
         android:id="@+id/txt_conteudo"

@@ -11,7 +11,8 @@
     <LinearLayout
         android:orientation="vertical"
         android:layout_width="match_parent"
-        android:layout_height="match_parent">
+        android:layout_height="match_parent"
+        android:paddingBottom="?attr/actionBarSize">
 
         <!-- Barra Offline -->
         <LinearLayout
@@ -28,7 +29,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_no_connection"
-                android:tint="?attr/colorOnErrorContainer" />
+                app:tint="?attr/colorOnErrorContainer" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -92,7 +93,7 @@
                         android:layout_width="24dp"
                         android:layout_height="24dp"
                         android:src="@drawable/ic_arrow_drop_down"
-                        android:tint="?attr/colorOnSurface"/>
+                        app:tint="?attr/colorOnSurface" />
                 </LinearLayout>
             </com.google.android.material.card.MaterialCardView>
 
@@ -113,7 +114,7 @@
                     android:background="?attr/selectableItemBackgroundBorderless"
                     android:src="@drawable/ic_filter"
                     android:contentDescription="Filtrar provas"
-                    android:tint="?attr/colorOnSurface"/>
+                    app:tint="?attr/colorOnSurface" />
             </com.google.android.material.card.MaterialCardView>
         </LinearLayout>
 
