@@ -40,13 +40,10 @@ Bom proveito!
 
 # Como instalar? #
 Requisitos mínimos:
-  1. Android 5.0 ou superior;
+  1. Android 7.0 ou superior (o suporte para Android 6.0 ou inferior foi removido pois é impossível fazer login);
   2. Android System Webview na versão mais recente possível.
 
 Baixe o apk aqui: https://github.com/gmb7886/EtapaClient/releases
-
-Para Android 4.4 ou inferior: https://github.com/gmb7886/EtapaClientLegacy/
-
 
 # Algumas observações! #
 
