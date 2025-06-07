@@ -28,6 +28,7 @@ import com.google.android.material.appbar.MaterialToolbar
 import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.bottomsheet.BottomSheetDialog
 import com.google.android.material.color.MaterialColors
+import com.google.android.material.navigationrail.NavigationRailView
 import java.util.concurrent.TimeUnit
 
 class MainActivity : AppCompatActivity() {
@@ -37,6 +38,8 @@ class MainActivity : AppCompatActivity() {
     }
 
     private var currentFragment: Fragment? = null
+    private lateinit var bottomNav: BottomNavigationView
+    private lateinit var navRail: NavigationRailView
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -63,24 +66,21 @@ class MainActivity : AppCompatActivity() {
             insets
         }
 
-        val bottomNav: BottomNavigationView = findViewById(R.id.bottom_navigation)
+        bottomNav = findViewById(R.id.bottom_navigation)
+        navRail = findViewById(R.id.navigation_rail)
         val rootView: View = findViewById(R.id.main)
 
-        // Oculta bottom nav quando teclado aparece
-        rootView.viewTreeObserver.addOnGlobalLayoutListener {
-            val r = Rect()
-            rootView.getWindowVisibleDisplayFrame(r)
-            val screenHeight = rootView.rootView.height
-            val keypadHeight = screenHeight - r.bottom
-            bottomNav.visibility = if (keypadHeight > screenHeight * 0.15) View.GONE else View.VISIBLE
-        }
-
-        bottomNav.setOnItemSelectedListener { handleNavigation(it) }
+        // Configurar navegação para tablet/celular
+        configureNavigationForDevice()
 
         // Se veio extra para abrir Notas diretamente
         val targetItem = intent.getIntExtra("EXTRA_NAV_ITEM_ID", -1)
         if (targetItem == R.id.navigation_notas) {
-            bottomNav.selectedItemId = targetItem
+            if (resources.getBoolean(R.bool.isTablet)) {
+                navRail.selectedItemId = targetItem
+            } else {
+                bottomNav.selectedItemId = targetItem
+            }
         }
 
         if (savedInstanceState == null) {
@@ -95,13 +95,42 @@ class MainActivity : AppCompatActivity() {
         iniciarUpdateWorker()
     }
 
+    private fun configureNavigationForDevice() {
+        val isTablet = resources.getBoolean(R.bool.isTablet)
+
+        if (isTablet) {
+            // Modo tablet - usar Navigation Rail
+            bottomNav.visibility = View.GONE
+            navRail.visibility = View.VISIBLE
+            navRail.setOnItemSelectedListener { handleNavigation(it) }
+        } else {
+            // Modo celular - usar Bottom Navigation
+            navRail.visibility = View.GONE
+            bottomNav.visibility = View.VISIBLE
+            bottomNav.setOnItemSelectedListener { handleNavigation(it) }
+
+            // Manter o código existente para ocultar ao abrir teclado
+            val rootView: View = findViewById(R.id.main)
+            rootView.viewTreeObserver.addOnGlobalLayoutListener {
+                val r = Rect()
+                rootView.getWindowVisibleDisplayFrame(r)
+                val screenHeight = rootView.rootView.height
+                val keypadHeight = screenHeight - r.bottom
+                bottomNav.visibility = if (keypadHeight > screenHeight * 0.15) View.GONE else View.VISIBLE
+            }
+        }
+    }
+
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
         setIntent(intent)
-        val bottomNav: BottomNavigationView = findViewById(R.id.bottom_navigation)
         val target = intent?.getIntExtra("EXTRA_NAV_ITEM_ID", -1) ?: -1
         if (target == R.id.navigation_notas) {
-            bottomNav.selectedItemId = target
+            if (resources.getBoolean(R.bool.isTablet)) {
+                navRail.selectedItemId = target
+            } else {
+                bottomNav.selectedItemId = target
+            }
         }
     }
 
@@ -118,6 +147,7 @@ class MainActivity : AppCompatActivity() {
             updateWork
         )
     }
+
     private fun configureSystemBarsForLegacyDevices() {
         // Aplicar apenas para Android 9 (Pie) e versões anteriores
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
@@ -182,6 +212,7 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
     private fun solicitarPermissaoNotificacao() {
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(

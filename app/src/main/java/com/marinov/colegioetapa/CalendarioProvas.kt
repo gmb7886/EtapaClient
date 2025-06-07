@@ -20,6 +20,7 @@ import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -33,7 +34,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import androidx.core.content.edit
 
 class CalendarioProvas : Fragment() {
 
@@ -47,7 +47,6 @@ class CalendarioProvas : Fragment() {
         const val FILTRO_PROVAS = 1
         const val FILTRO_RECUPERACOES = 2
     }
-
     private lateinit var recyclerProvas: RecyclerView
     private lateinit var progressBar: CircularProgressIndicator
     private lateinit var barOffline: View
@@ -67,16 +66,20 @@ class CalendarioProvas : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val root = inflater.inflate(R.layout.fragment_provas_calendar, container, false)
+        return inflater.inflate(R.layout.fragment_provas_calendar, container, false)
+    }
 
-        recyclerProvas = root.findViewById(R.id.recyclerProvas)
-        progressBar = root.findViewById(R.id.progress_circular)
-        barOffline = root.findViewById(R.id.barOffline)
-        txtSemProvas = root.findViewById(R.id.txt_sem_provas)
-        txtSemDados = root.findViewById(R.id.txt_sem_dados)
-        spinnerMes = root.findViewById(R.id.spinner_mes)
-        btnLogin = root.findViewById(R.id.btnLogin)
-        btnFiltro = root.findViewById(R.id.btnFiltro)
+    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
+        super.onViewCreated(view, savedInstanceState)
+
+        recyclerProvas = view.findViewById(R.id.recyclerProvas)
+        progressBar = view.findViewById(R.id.progress_circular)
+        barOffline = view.findViewById(R.id.barOffline)
+        txtSemProvas = view.findViewById(R.id.txt_sem_provas)
+        txtSemDados = view.findViewById(R.id.txt_sem_dados)
+        spinnerMes = view.findViewById(R.id.spinner_mes)
+        btnLogin = view.findViewById(R.id.btnLogin)
+        btnFiltro = view.findViewById(R.id.btnFiltro)
 
         setupRecyclerView()
         configurarSpinnerMeses()
@@ -97,20 +100,15 @@ class CalendarioProvas : Fragment() {
             mostrarMenuFiltro(it)
         }
 
-        return root
-    }
-
-    override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
-        super.onViewCreated(view, savedInstanceState)
-
-        val callback = object : OnBackPressedCallback(true) {
-            override fun handleOnBackPressed() {
-                val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-                bottomNav.selectedItemId = R.id.navigation_home
+        // Configurar back press
+        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner,
+            object : OnBackPressedCallback(true) {
+                override fun handleOnBackPressed() {
+                    val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
+                    bottomNav.selectedItemId = R.id.navigation_home
+                }
             }
-        }
-
-        requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, callback)
+        )
     }
 
     private fun setupRecyclerView() {
@@ -151,26 +149,17 @@ class CalendarioProvas : Fragment() {
         }
 
         popup.setOnMenuItemClickListener { item ->
-            when (item.itemId) {
-                R.id.filtro_todos -> {
-                    filtroAtual = FILTRO_TODOS
-                    true
-                }
-                R.id.filtro_provas -> {
-                    filtroAtual = FILTRO_PROVAS
-                    true
-                }
-                R.id.filtro_recuperacoes -> {
-                    filtroAtual = FILTRO_RECUPERACOES
-                    true
-                }
-                else -> false
-            }.also {
-                // Salvar preferência
-                prefs.edit { putInt(KEY_FILTRO, filtroAtual) }
-                // Aplicar filtro
-                adapter.aplicarFiltro(filtroAtual)
+            filtroAtual = when (item.itemId) {
+                R.id.filtro_todos -> FILTRO_TODOS
+                R.id.filtro_provas -> FILTRO_PROVAS
+                R.id.filtro_recuperacoes -> FILTRO_RECUPERACOES
+                else -> return@setOnMenuItemClickListener false
             }
+
+            // Salvar preferência e aplicar filtro
+            prefs.edit { putInt(KEY_FILTRO, filtroAtual) }
+            adapter.aplicarFiltro(filtroAtual)
+            true
         }
 
         popup.show()
@@ -180,11 +169,11 @@ class CalendarioProvas : Fragment() {
         if (!isOnline()) {
             exibirBarraOffline()
             verificarCache()
-            return
+        } else {
+            exibirCarregando()
+            val url = if (mesSelecionado == 0) URL_BASE else "$URL_BASE?mes%5B%5D=$mesSelecionado"
+            fetchProvas(url)
         }
-
-        val url = if (mesSelecionado == 0) URL_BASE else "$URL_BASE?mes%5B%5D=$mesSelecionado"
-        fetchProvas(url)
     }
 
     private fun verificarCache() {
@@ -203,13 +192,12 @@ class CalendarioProvas : Fragment() {
     }
 
     private fun carregarCacheProvas() {
-        val html = cache.loadHtml(mesSelecionado)
-        if (html != null) {
+        cache.loadHtml(mesSelecionado)?.let { html ->
             val fake = Jsoup.parse(html)
             val table = fake.selectFirst("table")
             if (table != null) {
                 parseAndDisplayTable(table)
-                recyclerProvas.visibility = View.VISIBLE
+                exibirConteudoOnline()
             }
         }
     }
@@ -217,8 +205,6 @@ class CalendarioProvas : Fragment() {
     private fun fetchProvas(url: String) {
         CoroutineScope(Dispatchers.Main).launch {
             try {
-                exibirCarregando()
-
                 val doc = withContext(Dispatchers.IO) {
                     try {
                         val cookieHeader = CookieManager.getInstance().getCookie(url)
@@ -235,36 +221,23 @@ class CalendarioProvas : Fragment() {
 
                 progressBar.visibility = View.GONE
 
-                if (doc != null) {
-                    val table = doc.selectFirst(
-                        "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > " +
-                                "div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > " +
-                                "div.card.mb-5.bg-transparent.text-white.border-0 > table"
-                    )
-                    val alerta = doc.selectFirst(
-                        "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > " +
-                                "div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > " +
-                                "div.alert.alert-info.text-center"
-                    )
-
-                    when {
-                        table != null -> {
-                            cache.salvarProvas(table.outerHtml(), mesSelecionado)
-                            parseAndDisplayTable(table)
-                            exibirConteudoOnline()
-                        }
-                        alerta != null -> {
-                            cache.salvarMesSemProvas(mesSelecionado)
-                            exibirMensagemSemProvas()
-                        }
-                        else -> {
-                            verificarCache()
-                            exibirBarraOffline()
-                        }
+                when {
+                    doc?.selectFirst("table") != null -> {
+                        val table = doc.selectFirst("table")!!
+                        cache.salvarProvas(table.outerHtml(), mesSelecionado)
+                        parseAndDisplayTable(table)
+                        exibirConteudoOnline()
                     }
-                } else {
-                    verificarCache()
-                    exibirBarraOffline()
+
+                    doc?.selectFirst(".alert-info") != null -> {
+                        cache.salvarMesSemProvas(mesSelecionado)
+                        exibirMensagemSemProvas()
+                    }
+
+                    else -> {
+                        verificarCache()
+                        exibirBarraOffline()
+                    }
                 }
             } catch (_: Exception) {
                 progressBar.visibility = View.GONE
@@ -291,6 +264,9 @@ class CalendarioProvas : Fragment() {
 
     private fun exibirBarraOffline() {
         barOffline.visibility = View.VISIBLE
+        progressBar.visibility = View.GONE
+        txtSemProvas.visibility = View.GONE
+        txtSemDados.visibility = View.GONE
     }
 
     private fun exibirSemDados() {
@@ -361,7 +337,6 @@ class CalendarioProvas : Fragment() {
             if (items.isEmpty()) {
                 txtSemProvas.visibility = View.VISIBLE
                 recyclerProvas.visibility = View.GONE
-            } else {
                 txtSemProvas.visibility = View.GONE
                 recyclerProvas.visibility = View.VISIBLE
             }
@@ -400,8 +375,30 @@ class CalendarioProvas : Fragment() {
             holder.card.setOnClickListener {
                 if (parentFragment.isAdded) {
                     val transaction = parentFragment.parentFragmentManager.beginTransaction()
-                    transaction.replace(R.id.nav_host_fragment, MateriadeProva.newInstance(item.link))
-                    transaction.addToBackStack(null)
+
+                    // Verificar se é tablet
+                    if (resources.getBoolean(R.bool.isTablet)) {
+                        // Substituir apenas o conteúdo do painel direito
+                        val currentDetail = parentFragment.parentFragmentManager
+                            .findFragmentById(R.id.detail_container)
+
+                        if (currentDetail != null) {
+                            transaction.remove(currentDetail)
+                        }
+
+                        transaction.replace(
+                            R.id.detail_container,
+                            MateriadeProva.newInstance(item.link)
+                        )
+                    } else {
+                        // Substituir o fragmento principal em dispositivos não tablets
+                        transaction.replace(
+                            R.id.nav_host_fragment,
+                            MateriadeProva.newInstance(item.link)
+                        )
+                        transaction.addToBackStack(null)
+                    }
+
                     transaction.commit()
                 }
             }
@@ -435,14 +432,14 @@ class CalendarioProvas : Fragment() {
         fun salvarProvas(html: String, mes: Int) {
             prefs.edit {
                 putString("$KEY_BASE$mes", html)
-                    .remove("$KEY_SEM_PROVAS$mes")
+                remove("$KEY_SEM_PROVAS$mes")
             }
         }
 
         fun salvarMesSemProvas(mes: Int) {
             prefs.edit {
                 putBoolean("$KEY_SEM_PROVAS$mes", true)
-                    .remove("$KEY_BASE$mes")
+                remove("$KEY_BASE$mes")
             }
         }
 

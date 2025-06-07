@@ -41,4 +41,11 @@
         <item name="strokeColor">?attr/colorOutline</item>
         <item name="strokeWidth">1dp</item>
     </style>
+    <style name="Widget.ColégioEtapa.NavigationRailView" parent="Widget.Material3.NavigationRailView">
+        <item name="itemIconTint">@color/selector_bottom_nav_item_color</item>
+        <item name="itemTextColor">@color/selector_bottom_nav_item_color</item>
+        <item name="android:layout_marginTop">8dp</item>
+        <item name="android:layout_marginBottom">8dp</item>
+        <item name="android:background">@color/fundocartao</item>
+    </style>
 </resources>
