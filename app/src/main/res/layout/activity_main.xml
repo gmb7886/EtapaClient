@@ -34,6 +34,7 @@
             <!-- Navigation Rail para tablets -->
             <com.google.android.material.navigationrail.NavigationRailView
                 android:id="@+id/navigation_rail"
+                style="@style/Widget.ColégioEtapa.NavigationRailView"
                 android:layout_width="wrap_content"
                 android:layout_height="match_parent"
                 android:visibility="gone"

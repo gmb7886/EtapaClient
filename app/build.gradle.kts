@@ -9,10 +9,10 @@ android {
 
     defaultConfig {
         applicationId = "com.marinov.colegioetapa"
-        minSdk = 21
+        minSdk = 24
         targetSdk = 35
         versionCode = 1
-        versionName = "12.5"
+        versionName = "12.6"
         buildConfigField("String", "EAD_URL", "\"${project.properties["EAD_URL"]}\"")
         buildConfigField("String", "GITHUB_PAT", "\"${project.properties["GITHUB_PAT"]}\"")
     }
