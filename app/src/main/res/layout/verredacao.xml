@@ -61,7 +61,11 @@
                     android:id="@+id/secao_detalhes"
                     android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:orientation="vertical">
+                    android:orientation="vertical"
+                    android:paddingBottom="8dp"
+                    android:paddingTop="0dp"
+                    android:paddingLeft="0dp"
+                    android:paddingRight="0dp">
 
                     <!-- Tabela de Informações -->
                     <TextView
