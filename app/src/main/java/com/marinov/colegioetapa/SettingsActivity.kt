@@ -193,6 +193,8 @@ class SettingsActivity : AppCompatActivity() {
             "cache_html_boletim",
             "redacao_semanal_prefs",
             "cache_html_redacao_semanal",
+            "detalhes_prefs",
+            "cache_html_detalhes",
             "cache_html_provas"
         ).forEach { clearSharedPreferences(it) }
     }

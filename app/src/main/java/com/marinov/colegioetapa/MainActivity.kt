@@ -368,6 +368,22 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+    fun abrirWebView(url: String) {
+        val fragment = WebViewFragment().apply {
+            arguments = WebViewFragment.createArgs(url)
+        }
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.nav_host_fragment, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
+    fun abrirDetalhesProva(url: String) {
+        val fragment = DetalhesProvaFragment.newInstance(url)
+        supportFragmentManager.beginTransaction()
+            .replace(R.id.nav_host_fragment, fragment)
+            .addToBackStack(null)
+            .commit()
+    }
     fun navigateToHome() {
         if (resources.getBoolean(R.bool.isTablet)) {
             navRail.selectedItemId = R.id.navigation_home
