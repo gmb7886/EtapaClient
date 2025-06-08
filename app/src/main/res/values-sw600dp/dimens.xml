@@ -4,5 +4,6 @@
     <dimen name="max_table_width">700dp</dimen>
     <dimen name="max_table_width_horarios">700dp</dimen>
     <dimen name="max_card_width">800dp</dimen>
+    <dimen name="max_card_width_settings">450dp</dimen>
     <dimen name="max_card_width_provas">500dp</dimen>
 </resources>

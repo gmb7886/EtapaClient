@@ -64,8 +64,7 @@ class HorariosAula : Fragment() {
 
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-                bottomNav.selectedItemId = R.id.navigation_home
+                (activity as? MainActivity)?.navigateToHome()
             }
         }
 

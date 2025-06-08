@@ -93,8 +93,7 @@ class RedacaoSemanalFragment : Fragment() {
     }
 
     private fun voltarParaHome() {
-        val navView = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        navView.selectedItemId = R.id.navigation_home
+        (activity as? MainActivity)?.navigateToHome()
     }
 
     private fun verificarElementoCritico() {

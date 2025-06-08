@@ -99,13 +99,10 @@ class CalendarioProvas : Fragment() {
         btnFiltro.setOnClickListener {
             mostrarMenuFiltro(it)
         }
-
-        // Configurar back press
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner,
             object : OnBackPressedCallback(true) {
                 override fun handleOnBackPressed() {
-                    val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-                    bottomNav.selectedItemId = R.id.navigation_home
+                    (activity as? MainActivity)?.navigateToHome()
                 }
             }
         )

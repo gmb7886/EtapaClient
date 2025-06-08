@@ -146,8 +146,7 @@ class MaterialFragment : Fragment() {
     }
 
     private fun navigateToHomeFragment() {
-        val bottomNav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        bottomNav.selectedItemId = R.id.navigation_home
+        (activity as? MainActivity)?.navigateToHome()
     }
 
     private fun verificarElementoCritico() {

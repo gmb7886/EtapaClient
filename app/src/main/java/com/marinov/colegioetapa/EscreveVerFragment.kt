@@ -67,7 +67,7 @@ class EscreveVerFragment : Fragment() {
 
         // Botão "Tentar Novamente" volta para o HomeFragment
         btnTentarNovamente.setOnClickListener {
-            voltarParaHome()
+            navigateToHomeFragment()
         }
 
         return root
@@ -78,7 +78,7 @@ class EscreveVerFragment : Fragment() {
 
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                voltarParaHome()
+                navigateToHomeFragment()
             }
         }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, callback)
@@ -87,9 +87,8 @@ class EscreveVerFragment : Fragment() {
         verificarElementoCritico()
     }
 
-    private fun voltarParaHome() {
-        val navView = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        navView.selectedItemId = R.id.navigation_home
+    private fun navigateToHomeFragment() {
+        (activity as? MainActivity)?.navigateToHome()
     }
 
     private fun verificarElementoCritico() {

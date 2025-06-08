@@ -66,7 +66,7 @@ class BoletimSimuladosFragment : Fragment() {
         setupRecyclerView()
 
         btnTentarNovamente.setOnClickListener {
-            voltarParaHome()
+            navigateToHomeFragment()
         }
 
         return root
@@ -77,7 +77,7 @@ class BoletimSimuladosFragment : Fragment() {
 
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
-                voltarParaHome()
+                navigateToHomeFragment()
             }
         }
         requireActivity().onBackPressedDispatcher.addCallback(viewLifecycleOwner, callback)
@@ -85,9 +85,8 @@ class BoletimSimuladosFragment : Fragment() {
         verificarElementoCritico()
     }
 
-    private fun voltarParaHome() {
-        val navView = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        navView.selectedItemId = R.id.navigation_home
+    private fun navigateToHomeFragment() {
+        (activity as? MainActivity)?.navigateToHome()
     }
 
     private fun verificarElementoCritico() {

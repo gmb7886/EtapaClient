@@ -368,4 +368,11 @@ class MainActivity : AppCompatActivity() {
             else -> super.onOptionsItemSelected(item)
         }
     }
+    fun navigateToHome() {
+        if (resources.getBoolean(R.bool.isTablet)) {
+            navRail.selectedItemId = R.id.navigation_home
+        } else {
+            bottomNav.selectedItemId = R.id.navigation_home
+        }
+    }
 }

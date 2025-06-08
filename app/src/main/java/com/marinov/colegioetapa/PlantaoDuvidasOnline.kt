@@ -77,10 +77,8 @@ class PlantaoDuvidasOnline : Fragment() {
     }
 
     private fun navigateToHomeFragment() {
-        val navView = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-        navView.selectedItemId = R.id.navigation_home
+        (activity as? MainActivity)?.navigateToHome()
     }
-
 
     private fun hasInternetConnection(): Boolean {
         val context = context ?: return false

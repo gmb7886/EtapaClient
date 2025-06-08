@@ -40,7 +40,6 @@ import androidx.appcompat.app.AlertDialog;
 import androidx.core.content.ContextCompat;
 import androidx.fragment.app.Fragment;
 
-import com.google.android.material.bottomnavigation.BottomNavigationView;
 import com.google.android.material.button.MaterialButton;
 
 public class EADFragment extends Fragment {
@@ -113,9 +112,7 @@ public class EADFragment extends Fragment {
                 if (webView != null && webView.canGoBack()) {
                     webView.goBack(); // Retrocede no WebView
                 } else {
-                    // Navega para o HomeFragment via BottomNavigation
-                    BottomNavigationView bottomNav = requireActivity().findViewById(R.id.bottom_navigation);
-                    bottomNav.setSelectedItemId(R.id.navigation_home);
+                    navigateToHomeFragment();
                 }
             }
         };
@@ -126,6 +123,12 @@ public class EADFragment extends Fragment {
                 onBackPressedCallback
         );
     }
+        private void navigateToHomeFragment() {
+            Activity activity = getActivity();
+            if (activity instanceof MainActivity) {
+                ((MainActivity) activity).navigateToHome();
+            }
+        }
     @SuppressLint("SetJavaScriptEnabled")
     private void checkAuthentication() {
         WebView authCheckWebView = new WebView(requireContext());
@@ -286,6 +289,7 @@ public class EADFragment extends Fragment {
                 layoutSemInternet.setVisibility(View.GONE);
                 checkAuthentication();
             } else {
+                navigateToHomeFragment();
             }
         });
     }

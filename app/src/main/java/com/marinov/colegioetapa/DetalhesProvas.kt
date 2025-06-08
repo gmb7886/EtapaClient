@@ -76,7 +76,7 @@ class DetalhesProvas : Fragment() {
     }
 
     private fun navigateToHomeFragment() {
-        parentFragmentManager.popBackStackImmediate()
+        (activity as? MainActivity)?.navigateToHome()
     }
 
     private fun hasInternetConnection(): Boolean {
