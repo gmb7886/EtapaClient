@@ -6,8 +6,7 @@
     android:layout_width="match_parent"
     android:layout_height="match_parent"
     android:background="@color/fundocartao"
-    android:fitsSystemWindows="true"
-    >
+    android:fitsSystemWindows="true">
 
     <!-- Container de Carregamento -->
     <FrameLayout
@@ -60,18 +59,24 @@
             android:padding="8dp"
             android:paddingBottom="?attr/actionBarSize">
 
-            <!-- Carrossel com altura proporcional 800:300 -->
+            <!-- Carrossel com altura fixa para celular -->
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPager"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:minHeight="150dp"
-                android:maxHeight="600dp"
+                android:layout_height="180dp"
                 android:clipToPadding="false"
                 android:padding="8dp"
                 android:overScrollMode="never"
-                tools:itemCount="5" />
-
+                tools:itemCount="5"
+                android:visibility="gone"/>
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="Procurando os banners? Acesse o app oficial do Etapa ou use a versão para tablets desse app."
+                android:textColor="?attr/colorOnSurface"
+                android:textSize="20sp"
+                android:padding="8dp"
+                android:layout_marginBottom="8dp"/>
             <!-- Notícias -->
             <LinearLayout
                 android:layout_width="match_parent"

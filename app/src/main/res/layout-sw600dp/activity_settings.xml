@@ -33,6 +33,7 @@
             android:layout_height="match_parent"
             android:fillViewport="true"
             android:overScrollMode="never"
+            android:scrollbars="none"
             android:paddingBottom="8dp">
 
             <LinearLayout
