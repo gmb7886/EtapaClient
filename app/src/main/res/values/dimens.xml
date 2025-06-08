@@ -6,4 +6,7 @@
     <dimen name="max_card_width">800dp</dimen>
     <dimen name="max_card_width_provas">500dp</dimen>
     <dimen name="max_card_width_settings">450dp</dimen>
+    <dimen name="carousel_min_height">150dp</dimen>
+    <dimen name="carousel_max_height">600dp</dimen>
+
 </resources>

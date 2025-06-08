@@ -3,6 +3,7 @@ package com.marinov.colegioetapa;
 import android.annotation.SuppressLint;
 import android.content.Context;
 import android.content.SharedPreferences;
+import android.content.res.Configuration;
 import android.net.ConnectivityManager;
 import android.net.Network;
 import android.net.NetworkCapabilities;
@@ -92,6 +93,15 @@ public class HomeFragment extends Fragment {
         if (shouldReloadOnResume) {
             checkInternetAndLoadData();
             shouldReloadOnResume = false;
+        }
+    }
+
+    @Override
+    public void onConfigurationChanged(@NonNull Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Recalcula o tamanho do carrossel quando a orientação muda
+        if (viewPager != null && viewPager.getAdapter() != null) {
+            viewPager.post(this::adjustCarouselHeight);
         }
     }
 
@@ -402,22 +412,48 @@ public class HomeFragment extends Fragment {
     }
 
     private void setupCarousel() {
-        ViewGroup.LayoutParams params = viewPager.getLayoutParams();
-        int screenWidth = getResources().getDisplayMetrics().widthPixels;
-        params.height = (int) (screenWidth * 0.5625); // Proporção 16:9
-        viewPager.setLayoutParams(params);
-
+        // Configura o adapter primeiro
         viewPager.setAdapter(new CarouselAdapter());
-        viewPager.setPadding(0, 0, 0, 0);
         viewPager.setClipToPadding(false);
         viewPager.setClipChildren(false);
         viewPager.setOffscreenPageLimit(3);
+
+        // Ajusta a altura após a view ser medida
+        viewPager.post(this::adjustCarouselHeight);
+    }
+
+    private void adjustCarouselHeight() {
+        if (isFragmentDestroyed || viewPager == null) return;
+
+        // Obtém a largura atual do ViewPager2
+        int viewPagerWidth = viewPager.getWidth();
+
+        // Se a largura ainda não estiver disponível, tenta novamente
+        if (viewPagerWidth <= 0) {
+            viewPager.post(this::adjustCarouselHeight);
+            return;
+        }
+
+        // Proporção 800:300 (300/800 = 0.375)
+        int calculatedHeight = (int) (viewPagerWidth * 0.375f);
+
+        // Aplica limites mínimos e máximos
+        int minHeight = (int) getResources().getDimension(R.dimen.carousel_min_height);
+        int maxHeight = (int) getResources().getDimension(R.dimen.carousel_max_height);
+
+        int finalHeight = Math.max(minHeight, Math.min(calculatedHeight, maxHeight));
+
+        // Aplica a altura
+        ViewGroup.LayoutParams params = viewPager.getLayoutParams();
+        if (params.height != finalHeight) {
+            params.height = finalHeight;
+            viewPager.setLayoutParams(params);
+        }
     }
 
     private void setupNews() {
         newsRecyclerView.setAdapter(new NewsAdapter());
     }
-
 
     private class CarouselAdapter extends RecyclerView.Adapter<CarouselViewHolder> {
         @NonNull

@@ -60,17 +60,19 @@
             android:padding="8dp"
             android:paddingBottom="?attr/actionBarSize">
 
-            <!-- Carrossel - Altura responsiva -->
+            <!-- Carrossel com altura proporcional 800:300 -->
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPager"
                 android:layout_width="match_parent"
-                android:layout_height="200dp"
+                android:layout_height="wrap_content"
+                android:minHeight="150dp"
+                android:maxHeight="600dp"
                 android:clipToPadding="false"
                 android:padding="8dp"
                 android:overScrollMode="never"
                 tools:itemCount="5" />
 
-            <!-- Notícias - Layout melhorado -->
+            <!-- Notícias -->
             <LinearLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
@@ -94,13 +96,12 @@
                     android:orientation="horizontal"
                     app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
                     tools:listitem="@layout/news_item"
-                    android:nestedScrollingEnabled="false"
-                    />
+                    android:nestedScrollingEnabled="false"/>
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
 
-    <!-- Tela Offline - Padronizada com outros fragments -->
+    <!-- Tela Offline -->
     <LinearLayout
         android:id="@+id/layout_sem_internet"
         android:layout_width="match_parent"
