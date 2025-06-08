@@ -8,5 +8,6 @@
     <dimen name="max_card_width_settings">450dp</dimen>
     <dimen name="carousel_min_height">150dp</dimen>
     <dimen name="carousel_max_height">600dp</dimen>
+    <dimen name="max_card_width_home">700dp</dimen>
 
 </resources>
