@@ -7,7 +7,7 @@
     android:layout_height="match_parent"
     android:background="@color/fundocartao"
     android:fitsSystemWindows="true"
-    android:paddingBottom="?attr/actionBarSize">
+    >
 
     <!-- Container de Carregamento -->
     <FrameLayout
@@ -45,39 +45,6 @@
         </LinearLayout>
     </FrameLayout>
 
-    <!-- Tela Offline -->
-    <LinearLayout
-        android:id="@+id/layout_sem_internet"
-        android:layout_width="match_parent"
-        android:layout_height="match_parent"
-        android:orientation="vertical"
-        android:gravity="center"
-        android:padding="24dp"
-        android:visibility="gone"
-        android:background="@color/fundocartao">
-
-        <ImageView
-            android:layout_width="64dp"
-            android:layout_height="64dp"
-            android:src="@drawable/ic_no_connection"
-            app:tint="?attr/colorOnSurface" />
-
-        <TextView
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:text="Sem internet"
-            android:layout_marginTop="16dp"
-            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"/>
-
-        <com.google.android.material.button.MaterialButton
-            android:id="@+id/btn_tentar_novamente"
-            android:layout_width="wrap_content"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="Tentar novamente"
-            style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-    </LinearLayout>
-
     <!-- Conteúdo Principal -->
     <ScrollView
         android:id="@+id/contentContainer"
@@ -93,7 +60,7 @@
             android:padding="8dp"
             android:paddingBottom="?attr/actionBarSize">
 
-        <!-- Carrossel - Altura responsiva -->
+            <!-- Carrossel - Altura responsiva -->
             <androidx.viewpager2.widget.ViewPager2
                 android:id="@+id/viewPager"
                 android:layout_width="match_parent"
@@ -132,4 +99,37 @@
             </LinearLayout>
         </LinearLayout>
     </ScrollView>
+
+    <!-- Tela Offline - Padronizada com outros fragments -->
+    <LinearLayout
+        android:id="@+id/layout_sem_internet"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/fundocartao"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone">
+
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_no_connection"
+            app:tint="?attr/colorOnSurface" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Sem internet"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_tentar_novamente"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="TENTAR NOVAMENTE" />
+    </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

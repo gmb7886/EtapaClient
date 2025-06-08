@@ -183,13 +183,9 @@ class NotasFragment : Fragment() {
     }
 
     private fun navigateToHome() {
-        try {
-            val nav = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-            nav.selectedItemId = R.id.navigation_home
-        } catch (e: Exception) {
-            Log.e("NotasFragment", "Erro ao simular retorno à home", e)
-        }
+        (activity as? MainActivity)?.navigateToHome()
     }
+
 
     private fun fetchNotas() {
         CoroutineScope(Dispatchers.Main).launch {

@@ -51,8 +51,7 @@ class HorariosAula : Fragment() {
         cache = CacheHelper(requireContext())
 
         btnLogin.setOnClickListener {
-            val navView = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-            navView?.selectedItemId = R.id.navigation_home
+            (activity as? MainActivity)?.navigateToHome()
         }
 
         fetchHorarios()

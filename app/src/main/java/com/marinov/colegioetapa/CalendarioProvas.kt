@@ -92,8 +92,7 @@ class CalendarioProvas : Fragment() {
         carregarDadosParaMes()
 
         btnLogin.setOnClickListener {
-            val navView = requireActivity().findViewById<BottomNavigationView>(R.id.bottom_navigation)
-            navView?.selectedItemId = R.id.navigation_home
+            (activity as? MainActivity)?.navigateToHome()
         }
 
         btnFiltro.setOnClickListener {
