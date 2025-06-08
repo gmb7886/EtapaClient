@@ -158,14 +158,13 @@ class DetalhesProvaFragment : Fragment() {
     }
 
     private fun parseDocument(doc: org.jsoup.nodes.Document) {
-        // Tabela 1: Detalhes da prova
         val tabelaDetalhes = doc.selectFirst(
             "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > div.card.mb-5.bg-transparent.border-0 > table"
         )
         if (tabelaDetalhes != null) {
             val linhas = tabelaDetalhes.select("tbody tr")
-            if (linhas.size > 0) {
-                val celulas = linhas[0].select("td")
+            if (linhas.size >= 2) {
+                val celulas = linhas[1].select("td")
                 if (celulas.size >= 4) {
                     val codigo = celulas[0].text()
                     val conjunto = celulas[1].text()
@@ -191,9 +190,12 @@ class DetalhesProvaFragment : Fragment() {
                 val celulas = linha.select("td")
                 if (celulas.size >= 5) {
                     val numero = celulas[0].text()
-                    val assunto = celulas[1].text().trim()
-                    val topico = celulas[2].text().trim()
-                    val subtopico = celulas[3].text().trim()
+
+                    // Processa múltiplas linhas usando <br>
+                    val assunto = celulas[1].html().replace("<br>", "\n").trim()
+                    val topico = celulas[2].html().replace("<br>", "\n").trim()
+                    val subtopico = celulas[3].html().replace("<br>", "\n").trim()
+
                     val dificuldade = celulas[4].text().trim()
 
                     questoes.add(Questao(numero, assunto, topico, subtopico, dificuldade))
@@ -273,6 +275,8 @@ class DetalhesProvaFragment : Fragment() {
         @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
+            holder.txtTopico.text = item.topico.replace(", ", "\n")
+            holder.txtSubTopico.text = item.subtopico.replace(", ", "\n")
             holder.txtNumero.text = "Questão ${item.numero}"
             holder.txtAssunto.text = item.assunto
             holder.txtTopico.text = item.topico
