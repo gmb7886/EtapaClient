@@ -190,7 +190,7 @@ public class HomeFragment extends Fragment {
         String cookies = cookieManager.getCookie(HOME_URL);
 
         return Jsoup.connect(HOME_URL)
-                .userAgent("Mozilla/5.0")
+                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
                 .header("Cookie", cookies != null ? cookies : "")
                 .timeout(10000)
                 .get();
