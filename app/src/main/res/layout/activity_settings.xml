@@ -22,16 +22,14 @@
         android:layout_height="match_parent"
         android:fillViewport="true"
         android:overScrollMode="never"
-        android:scrollbars="none"
-        android:paddingBottom="8dp">
+        android:scrollbars="none">
 
         <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:orientation="vertical"
             android:paddingTop="8dp"
-            android:paddingHorizontal="16dp"
-            android:paddingBottom="16dp">
+            android:paddingHorizontal="16dp">
 
             <!-- Seção: Atualizações -->
             <com.google.android.material.textview.MaterialTextView
