@@ -153,8 +153,7 @@ class SettingsActivity : AppCompatActivity() {
         btnReddit.setOnClickListener { openUrl("https://www.reddit.com/user/GMB7886/") }
         btnGithub.setOnClickListener { openUrl("https://github.com/gmb7886/") }
         btnYoutube.setOnClickListener { openUrl("https://youtube.com/@CanalDoMarinov") }
-        btnCheck.setOnClickListener { checkUpdate()
-        }
+        btnCheck.setOnClickListener { checkUpdate() }
 
         btnClear.setOnClickListener {
             CookieManager.getInstance().removeAllCookies(null)
@@ -262,9 +261,9 @@ class SettingsActivity : AppCompatActivity() {
     private fun processReleaseData(release: JSONObject) {
         runOnUiThread {
             val latest = release.getString("tag_name")
-            if (latest == BuildConfig.VERSION_NAME) {
-                showMessage()
-            } else {
+            val current = BuildConfig.VERSION_NAME
+
+            if (isVersionGreater(latest, current)) {
                 val assets = release.getJSONArray("assets")
                 var apkUrl: String? = null
                 for (i in 0 until assets.length()) {
@@ -275,8 +274,27 @@ class SettingsActivity : AppCompatActivity() {
                     }
                 }
                 apkUrl?.let { promptForUpdate(it) } ?: showError("Arquivo APK não encontrado no release.")
+            } else {
+                showMessage()
             }
         }
+    }
+
+    // Função para comparar versões semanticamente (idêntica à do UpdateChecker)
+    private fun isVersionGreater(newVersion: String, currentVersion: String): Boolean {
+        val newParts = newVersion.split(".").map { it.toIntOrNull() ?: 0 }
+        val currentParts = currentVersion.split(".").map { it.toIntOrNull() ?: 0 }
+
+        for (i in 0 until maxOf(newParts.size, currentParts.size)) {
+            val newPart = newParts.getOrElse(i) { 0 }
+            val currentPart = currentParts.getOrElse(i) { 0 }
+
+            when {
+                newPart > currentPart -> return true
+                newPart < currentPart -> return false
+            }
+        }
+        return false
     }
 
     private fun promptForUpdate(url: String) {

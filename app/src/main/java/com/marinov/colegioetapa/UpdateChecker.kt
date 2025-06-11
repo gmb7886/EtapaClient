@@ -45,7 +45,7 @@ object UpdateChecker {
                         val lastNotifiedVersion = prefs.getString(KEY_LAST_VERSION, "") ?: ""
 
                         when {
-                            latestVersion != currentVersion && latestVersion != lastNotifiedVersion -> {
+                            isVersionGreater(latestVersion, currentVersion) && latestVersion != lastNotifiedVersion -> {
                                 prefs.edit { putString(KEY_LAST_VERSION, latestVersion) }
                                 listener.onUpdateAvailable(release.getString("html_url"))
                             }
@@ -71,5 +71,22 @@ object UpdateChecker {
                 }
             }
         }
+    }
+
+    // Função para comparar versões semanticamente
+    private fun isVersionGreater(newVersion: String, currentVersion: String): Boolean {
+        val newParts = newVersion.split(".").map { it.toIntOrNull() ?: 0 }
+        val currentParts = currentVersion.split(".").map { it.toIntOrNull() ?: 0 }
+
+        for (i in 0 until maxOf(newParts.size, currentParts.size)) {
+            val newPart = newParts.getOrElse(i) { 0 }
+            val currentPart = currentParts.getOrElse(i) { 0 }
+
+            when {
+                newPart > currentPart -> return true
+                newPart < currentPart -> return false
+            }
+        }
+        return false
     }
 }
