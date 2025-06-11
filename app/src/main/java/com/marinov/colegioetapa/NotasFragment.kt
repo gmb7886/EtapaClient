@@ -19,7 +19,6 @@ import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -46,19 +45,19 @@ class NotasFragment : Fragment() {
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
-        val root = inflater.inflate(R.layout.fragment_notas, container, false)
-        tableNotas = root.findViewById(R.id.tableNotas)
-        barOffline = root.findViewById(R.id.barOffline)
-        val btnLogin: Button = root.findViewById(R.id.btnLogin)
-        btnLogin.setOnClickListener { navigateToHome() }
-
-        cache = CacheHelper(requireContext())
-        fetchNotas()
-        return root
+        return inflater.inflate(R.layout.fragment_notas, container, false)
     }
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        tableNotas = view.findViewById(R.id.tableNotas)
+        barOffline = view.findViewById(R.id.barOffline)
+        val btnLogin: Button = view.findViewById(R.id.btnLogin)
+        btnLogin.setOnClickListener { navigateToHome() }
+
+        cache = CacheHelper(requireContext())
+        fetchNotas()
 
         val callback = object : OnBackPressedCallback(true) {
             override fun handleOnBackPressed() {
@@ -70,22 +69,25 @@ class NotasFragment : Fragment() {
 
     @SuppressLint("SetTextI18n")
     private fun parseAndBuildTable(table: Element) {
+        // Verificação crítica de contexto
+        val context = context ?: return
+
         tableNotas.removeAllViews()
-        val colorDefault = ContextCompat.getColor(requireContext(), R.color.colorOnSurface)
-        val colorHeaderBg = ContextCompat.getColor(requireContext(), R.color.header_bg)
-        val colorHeaderText = ContextCompat.getColor(requireContext(), R.color.colorOnSurface)
+        val colorDefault = ContextCompat.getColor(context, R.color.colorOnSurface)
+        val colorHeaderBg = ContextCompat.getColor(context, R.color.header_bg)
+        val colorHeaderText = ContextCompat.getColor(context, R.color.colorOnSurface)
 
         val headers = table.select("thead th")
         if (headers.isNotEmpty()) {
-            val headerRow = TableRow(requireContext())
+            val headerRow = TableRow(context)
             headerRow.setBackgroundColor(colorHeaderBg)
 
-            val thCode = createCell(headers[1].text(), true)
+            val thCode = createCell(headers[1].text(), true, context)
             thCode.setTextColor(colorHeaderText)
             headerRow.addView(thCode)
 
             for (i in 2 until headers.size) {
-                val th = createCell(headers[i].text(), true)
+                val th = createCell(headers[i].text(), true, context)
                 th.setTextColor(colorHeaderText)
                 headerRow.addView(th)
             }
@@ -98,12 +100,12 @@ class NotasFragment : Fragment() {
         val counts = IntArray(notaCols)
 
         for (r in rows) {
-            val row = TableRow(requireContext())
-            row.setBackgroundColor(ContextCompat.getColor(requireContext(), android.R.color.transparent))
+            val row = TableRow(context)
+            row.setBackgroundColor(ContextCompat.getColor(context, android.R.color.transparent))
             val cols = r.children()
 
             val code = if (cols.size > 1) cols[1].text() else ""
-            val tvCode = createCell(code, false)
+            val tvCode = createCell(code, false, context)
             tvCode.setTextColor(colorDefault)
             row.addView(tvCode)
 
@@ -117,25 +119,25 @@ class NotasFragment : Fragment() {
                         sums[colIndex] += value
                         counts[colIndex]++
                     } catch (_: NumberFormatException) {
-                        // Ignore non-numeric values
+                        // Ignorar valores não numéricos
                     }
                 }
 
-                val tv = createCell(valText, false)
+                val tv = createCell(valText, false, context)
                 tv.setTextColor(colorDefault)
 
                 when {
                     cols[j].hasClass("bg-success") -> {
                         tv.setBackgroundResource(R.drawable.bg_success_rounded)
-                        tv.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white))
+                        tv.setTextColor(ContextCompat.getColor(context, android.R.color.white))
                     }
                     cols[j].hasClass("bg-warning") -> {
                         tv.setBackgroundResource(R.drawable.bg_warning_rounded)
-                        tv.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.black))
+                        tv.setTextColor(ContextCompat.getColor(context, android.R.color.black))
                     }
                     cols[j].hasClass("bg-danger") -> {
                         tv.setBackgroundResource(R.drawable.bg_danger_rounded)
-                        tv.setTextColor(ContextCompat.getColor(requireContext(), android.R.color.white))
+                        tv.setTextColor(ContextCompat.getColor(context, android.R.color.white))
                     }
                 }
                 row.addView(tv)
@@ -144,17 +146,17 @@ class NotasFragment : Fragment() {
         }
 
         if (headers.isNotEmpty()) {
-            val avgRow = TableRow(requireContext())
+            val avgRow = TableRow(context)
             avgRow.setBackgroundColor(colorHeaderBg)
 
-            val firstCell = createCell("Média", true)
+            val firstCell = createCell("Média", true, context)
             firstCell.setTextColor(colorHeaderText)
             avgRow.addView(firstCell)
 
             val decimalFormat = DecimalFormat("#.##")
             for (k in 0 until notaCols) {
                 val avgValue = if (counts[k] > 0) decimalFormat.format(sums[k] / counts[k]) else "--"
-                val avgCell = createCell(avgValue, true)
+                val avgCell = createCell(avgValue, true, context)
                 avgCell.setTextColor(colorHeaderText)
                 avgRow.addView(avgCell)
             }
@@ -162,8 +164,8 @@ class NotasFragment : Fragment() {
         }
     }
 
-    private fun createCell(txt: String, isHeader: Boolean): TextView {
-        return TextView(requireContext()).apply {
+    private fun createCell(txt: String, isHeader: Boolean, context: Context): TextView {
+        return TextView(context).apply {
             text = txt
             setTypeface(null, if (isHeader) Typeface.BOLD else Typeface.NORMAL)
             setTextSize(TypedValue.COMPLEX_UNIT_SP, if (isHeader) 13f else 12f)
@@ -175,17 +177,16 @@ class NotasFragment : Fragment() {
     }
 
     private fun showOfflineBar() {
-        barOffline.visibility = View.VISIBLE
+        if (isAdded) barOffline.visibility = View.VISIBLE
     }
 
     private fun hideOfflineBar() {
-        barOffline.visibility = View.GONE
+        if (isAdded) barOffline.visibility = View.GONE
     }
 
     private fun navigateToHome() {
         (activity as? MainActivity)?.navigateToHome()
     }
-
 
     private fun fetchNotas() {
         CoroutineScope(Dispatchers.Main).launch {
@@ -203,6 +204,8 @@ class NotasFragment : Fragment() {
                         null
                     }
                 }
+
+                if (!isAdded) return@launch
 
                 if (doc != null) {
                     val newTable = doc.selectFirst(
@@ -226,13 +229,16 @@ class NotasFragment : Fragment() {
                 }
             } catch (e: Exception) {
                 Log.e("NotasFragment", "Erro inesperado", e)
-                loadCachedData()
-                showOfflineBar()
+                if (isAdded) {
+                    loadCachedData()
+                    showOfflineBar()
+                }
             }
         }
     }
 
     private fun loadCachedData() {
+        if (!isAdded) return
         val html = cache.loadHtml()
         if (html != null) {
             val fake = Jsoup.parse(html)

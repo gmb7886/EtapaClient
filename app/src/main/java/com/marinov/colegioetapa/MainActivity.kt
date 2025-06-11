@@ -68,7 +68,6 @@ class MainActivity : AppCompatActivity() {
 
         bottomNav = findViewById(R.id.bottom_navigation)
         navRail = findViewById(R.id.navigation_rail)
-        val rootView: View = findViewById(R.id.main)
 
         // Configurar navegação para tablet/celular
         configureNavigationForDevice()
