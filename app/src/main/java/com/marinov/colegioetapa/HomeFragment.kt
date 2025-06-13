@@ -1,597 +1,554 @@
-package com.marinov.colegioetapa;
+package com.marinov.colegioetapa
 
-import android.annotation.SuppressLint;
-import android.content.Context;
-import android.content.SharedPreferences;
-import android.content.res.Configuration;
-import android.net.ConnectivityManager;
-import android.net.Network;
-import android.net.NetworkCapabilities;
-import android.net.NetworkInfo;
-import android.os.Build;
-import android.os.Bundle;
-import android.os.Handler;
-import android.os.Looper;
-import android.util.Log;
-import android.view.LayoutInflater;
-import android.view.View;
-import android.view.ViewGroup;
-import android.webkit.CookieManager;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
-import android.widget.TextView;
+import android.annotation.SuppressLint
+import android.content.Context
+import android.content.res.Configuration
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import android.os.Build
+import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
+import android.util.Log
+import android.view.LayoutInflater
+import android.view.View
+import android.view.ViewGroup
+import android.webkit.CookieManager
+import android.widget.ImageView
+import android.widget.LinearLayout
+import android.widget.TextView
+import androidx.fragment.app.Fragment
+import androidx.recyclerview.widget.LinearLayoutManager
+import androidx.recyclerview.widget.RecyclerView
+import androidx.viewpager2.widget.ViewPager2
+import com.bumptech.glide.Glide
+import com.google.android.material.button.MaterialButton
+import com.google.gson.Gson
+import com.google.gson.reflect.TypeToken
+import com.marinov.colegioetapa.WebViewFragment.Companion.createArgs
+import org.jsoup.Jsoup
+import org.jsoup.nodes.Document
+import java.io.IOException
+import java.util.concurrent.ExecutorService
+import java.util.concurrent.Executors
+import kotlin.math.max
+import kotlin.math.min
+import androidx.core.view.isVisible
+import androidx.core.content.edit
 
-import androidx.annotation.NonNull;
-import androidx.annotation.Nullable;
-import androidx.fragment.app.Fragment;
-import androidx.recyclerview.widget.LinearLayoutManager;
-import androidx.recyclerview.widget.RecyclerView;
-import androidx.viewpager2.widget.ViewPager2;
+class HomeFragment : Fragment() {
+    private var viewPager: ViewPager2? = null
+    private var newsRecyclerView: RecyclerView? = null
+    private var layoutSemInternet: LinearLayout? = null
+    private var btnTentarNovamente: MaterialButton? = null
+    private var loadingContainer: View? = null
+    private var contentContainer: View? = null
 
-import com.bumptech.glide.Glide;
-import com.google.android.material.button.MaterialButton;
-import com.google.gson.Gson;
-import com.google.gson.reflect.TypeToken;
+    private val carouselItems: MutableList<CarouselItem> = ArrayList<CarouselItem>()
+    private val newsItems: MutableList<NewsItem> = ArrayList<NewsItem>()
+    private var txtStuckHint: TextView? = null
 
-import org.jsoup.Jsoup;
-import org.jsoup.nodes.Document;
-import org.jsoup.nodes.Element;
-import org.jsoup.select.Elements;
+    private var isFragmentDestroyed = false
+    private var shouldReloadOnResume = false
 
-import java.io.IOException;
-import java.lang.reflect.Type;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
+    private val executor: ExecutorService = Executors.newSingleThreadExecutor()
+    private val handler = Handler(Looper.getMainLooper())
 
-public class HomeFragment extends Fragment {
-
-    private static final String PREFS_NAME = "HomeFragmentCache";
-    private static final String KEY_CAROUSEL_ITEMS = "carousel_items";
-    private static final String KEY_NEWS_ITEMS = "news_items";
-
-    private ViewPager2 viewPager;
-    private RecyclerView newsRecyclerView;
-    private LinearLayout layoutSemInternet;
-    private MaterialButton btnTentarNovamente;
-    private View loadingContainer;
-    private View contentContainer;
-
-    private final List<CarouselItem> carouselItems = new ArrayList<>();
-    private final List<NewsItem> newsItems = new ArrayList<>();
-    private static final String HOME_URL = "https://areaexclusiva.colegioetapa.com.br/home";
-    private static final String OUT_URL = "https://areaexclusiva.colegioetapa.com.br";
-    private TextView txtStuckHint;
-
-    private boolean isFragmentDestroyed = false;
-    private boolean shouldReloadOnResume = false;
-
-    private final ExecutorService executor = Executors.newSingleThreadExecutor();
-    private final Handler handler = new Handler(Looper.getMainLooper());
-
-    @Override
-    public View onCreateView(@NonNull LayoutInflater inflater,
-                             ViewGroup container,
-                             Bundle savedInstanceState) {
-        return inflater.inflate(R.layout.home_fragment_new, container, false);
+    override fun onCreateView(
+        inflater: LayoutInflater,
+        container: ViewGroup?,
+        savedInstanceState: Bundle?
+    ): View {
+        return inflater.inflate(R.layout.home_fragment_new, container, false)
     }
 
-    @Override
-    public void onViewCreated(@NonNull View view,
-                              @Nullable Bundle savedInstanceState) {
-        super.onViewCreated(view, savedInstanceState);
-        initializeViews(view);
-        setupRecyclerView();
-        setupListeners();
-        checkInternetAndLoadData();
+    override fun onViewCreated(
+        view: View,
+        savedInstanceState: Bundle?
+    ) {
+        super.onViewCreated(view, savedInstanceState)
+        initializeViews(view)
+        setupRecyclerView()
+        setupListeners()
+        checkInternetAndLoadData()
     }
 
-    @Override
-    public void onResume() {
-        super.onResume();
+    override fun onResume() {
+        super.onResume()
         if (shouldReloadOnResume) {
-            checkInternetAndLoadData();
-            shouldReloadOnResume = false;
+            checkInternetAndLoadData()
+            shouldReloadOnResume = false
         }
     }
 
-    @Override
-    public void onConfigurationChanged(@NonNull Configuration newConfig) {
-        super.onConfigurationChanged(newConfig);
+    override fun onConfigurationChanged(newConfig: Configuration) {
+        super.onConfigurationChanged(newConfig)
         // Recalcula o tamanho do carrossel quando a orientação muda
-        if (viewPager != null && viewPager.getAdapter() != null) {
-            viewPager.post(this::adjustCarouselHeight);
+        if (viewPager != null && viewPager!!.adapter != null) {
+            viewPager!!.post(Runnable { this.adjustCarouselHeight() })
         }
     }
 
-    @Override
-    public void onDestroyView() {
-        super.onDestroyView();
-        isFragmentDestroyed = true;
-        handler.removeCallbacksAndMessages(null);
-        executor.shutdownNow();
+    override fun onDestroyView() {
+        super.onDestroyView()
+        isFragmentDestroyed = true
+        handler.removeCallbacksAndMessages(null)
+        executor.shutdownNow()
     }
 
-    private void initializeViews(View view) {
-        loadingContainer = view.findViewById(R.id.loadingContainer);
-        contentContainer = view.findViewById(R.id.contentContainer);
-        layoutSemInternet = view.findViewById(R.id.layout_sem_internet);
-        btnTentarNovamente = view.findViewById(R.id.btn_tentar_novamente);
-        viewPager = view.findViewById(R.id.viewPager);
-        newsRecyclerView = view.findViewById(R.id.newsRecyclerView);
-        txtStuckHint = view.findViewById(R.id.txtStuckHint);
+    private fun initializeViews(view: View) {
+        loadingContainer = view.findViewById<View>(R.id.loadingContainer)
+        contentContainer = view.findViewById<View>(R.id.contentContainer)
+        layoutSemInternet = view.findViewById<LinearLayout>(R.id.layout_sem_internet)
+        btnTentarNovamente = view.findViewById<MaterialButton>(R.id.btn_tentar_novamente)
+        viewPager = view.findViewById<ViewPager2?>(R.id.viewPager)
+        newsRecyclerView = view.findViewById<RecyclerView>(R.id.newsRecyclerView)
+        txtStuckHint = view.findViewById<TextView>(R.id.txtStuckHint)
     }
 
-    private void setupRecyclerView() {
-        newsRecyclerView.setLayoutManager(
-                new LinearLayoutManager(getContext(), LinearLayoutManager.HORIZONTAL, false)
-        );
+    private fun setupRecyclerView() {
+        newsRecyclerView!!.setLayoutManager(
+            LinearLayoutManager(context, LinearLayoutManager.HORIZONTAL, false)
+        )
     }
 
-    private void setupListeners() {
-        btnTentarNovamente.setOnClickListener(v -> checkInternetAndLoadData());
+    private fun setupListeners() {
+        btnTentarNovamente!!.setOnClickListener(View.OnClickListener { v: View? -> checkInternetAndLoadData() })
     }
 
-    private void checkInternetAndLoadData() {
+    private fun checkInternetAndLoadData() {
         if (hasInternetConnection()) {
             if (loadCache()) {
-                showContentState();
-                setupCarousel();
-                setupNews();
-                fetchDataInBackground();
+                showContentState()
+                setupCarousel()
+                setupNews()
+                fetchDataInBackground()
             } else {
-                showLoadingState();
-                fetchDataInBackground();
+                showLoadingState()
+                fetchDataInBackground()
             }
         } else {
-            showOfflineState();
+            showOfflineState()
         }
     }
 
-    private void fetchDataInBackground() {
-        executor.execute(() -> {
+    private fun fetchDataInBackground() {
+        executor.execute(Runnable {
             try {
-                Document doc = fetchHomePageData();
+                val doc = fetchHomePageData()
                 if (isValidSession(doc)) {
-                    processPageContent(doc);
-                    saveCache();
-                    handler.postDelayed(this::updateUIWithNewData, 5000);
+                    processPageContent(doc)
+                    saveCache()
+                    handler.postDelayed(Runnable { this.updateUIWithNewData() }, 5000)
                 } else {
-                    clearCache();
-                    handler.post(this::handleInvalidSession);
+                    clearCache()
+                    handler.post(Runnable { this.handleInvalidSession() })
                 }
-            } catch (IOException e) {
-                handler.post(() -> handleDataFetchError(e));
+            } catch (e: IOException) {
+                handler.post(Runnable { handleDataFetchError(e) })
             }
-        });
+        })
     }
 
-    @SuppressLint("NotifyDataSetChanged")
-    private void updateUIWithNewData() {
-        if (isFragmentDestroyed) return;
+    @SuppressLint("NotifyDataSetChanged", "UseKtx")
+    private fun updateUIWithNewData() {
+        if (isFragmentDestroyed) return
 
-        if (viewPager.getAdapter() != null) {
-            viewPager.getAdapter().notifyDataSetChanged();
+        if (viewPager!!.adapter != null) {
+            viewPager!!.adapter!!.notifyDataSetChanged()
         }
-        if (newsRecyclerView.getAdapter() != null) {
-            newsRecyclerView.getAdapter().notifyDataSetChanged();
+        if (newsRecyclerView!!.adapter != null) {
+            newsRecyclerView!!.adapter!!.notifyDataSetChanged()
         }
 
-        if (loadingContainer.getVisibility() == View.VISIBLE) {
-            showContentState();
-            setupCarousel();
-            setupNews();
+        if (loadingContainer!!.isVisible) {
+            showContentState()
+            setupCarousel()
+            setupNews()
         }
     }
 
-    private Document fetchHomePageData() throws IOException {
-        CookieManager cookieManager = CookieManager.getInstance();
-        String cookies = cookieManager.getCookie(HOME_URL);
+    @Throws(IOException::class)
+    private fun fetchHomePageData(): Document {
+        val cookieManager = CookieManager.getInstance()
+        val cookies = cookieManager.getCookie(HOME_URL)
 
         return Jsoup.connect(HOME_URL)
-                .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
-                .header("Cookie", cookies != null ? cookies : "")
-                .timeout(10000)
-                .get();
+            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
+            .header("Cookie", cookies ?: "")
+            .timeout(10000)
+            .get()
     }
 
-    private boolean isValidSession(Document doc) {
+    private fun isValidSession(doc: Document): Boolean {
         return doc.getElementById("home_banners_carousel") != null &&
-                doc.selectFirst("div.col-12.col-lg-8.mb-5") != null;
+                doc.selectFirst("div.col-12.col-lg-8.mb-5") != null
     }
 
-    private void processPageContent(Document doc) {
-        List<CarouselItem> newCarousel = new ArrayList<>();
-        List<NewsItem> newNews = new ArrayList<>();
+    private fun processPageContent(doc: Document?) {
+        val newCarousel: MutableList<CarouselItem> = ArrayList<CarouselItem>()
+        val newNews: MutableList<NewsItem> = ArrayList<NewsItem>()
 
-        processCarousel(doc, newCarousel);
-        processNews(doc, newNews);
+        processCarousel(doc, newCarousel)
+        processNews(doc, newNews)
 
-        carouselItems.clear();
-        carouselItems.addAll(newCarousel);
+        carouselItems.clear()
+        carouselItems.addAll(newCarousel)
 
-        newsItems.clear();
-        newsItems.addAll(newNews);
+        newsItems.clear()
+        newsItems.addAll(newNews)
     }
 
-    private void handleInvalidSession() {
-        if (isFragmentDestroyed) return;
-        navigateToWebView(OUT_URL);
-        shouldReloadOnResume = true;
+    private fun handleInvalidSession() {
+        if (isFragmentDestroyed) return
+        navigateToWebView(OUT_URL)
+        shouldReloadOnResume = true
     }
 
-    private void handleDataFetchError(IOException e) {
-        if (isFragmentDestroyed) return;
-        Log.e("HomeFragment", "Erro ao buscar dados: " + e.getMessage());
+    private fun handleDataFetchError(e: IOException) {
+        if (isFragmentDestroyed) return
+        Log.e("HomeFragment", "Erro ao buscar dados: " + e.message)
 
-        if (loadingContainer.getVisibility() == View.VISIBLE &&
-                carouselItems.isEmpty() && newsItems.isEmpty()) {
-            navigateToWebView(OUT_URL);
-            shouldReloadOnResume = true;
+        if (loadingContainer!!.isVisible &&
+            carouselItems.isEmpty() && newsItems.isEmpty()
+        ) {
+            navigateToWebView(OUT_URL)
+            shouldReloadOnResume = true
         }
     }
 
-    private void saveCache() {
-        if (isFragmentDestroyed) return;
-        Context context = getContext();
-        if (context == null) return;
+    private fun saveCache() {
+        if (isFragmentDestroyed) return
+        val context = getContext()
+        if (context == null) return
 
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        SharedPreferences.Editor editor = prefs.edit();
-        Gson gson = new Gson();
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit {
+            val gson = Gson()
 
-        String carouselJson = gson.toJson(carouselItems);
-        String newsJson = gson.toJson(newsItems);
+            val carouselJson = gson.toJson(carouselItems)
+            val newsJson = gson.toJson(newsItems)
 
-        editor.putString(KEY_CAROUSEL_ITEMS, carouselJson);
-        editor.putString(KEY_NEWS_ITEMS, newsJson);
-        editor.apply();
+            putString(KEY_CAROUSEL_ITEMS, carouselJson)
+            putString(KEY_NEWS_ITEMS, newsJson)
+        }
     }
 
-    private boolean loadCache() {
-        if (isFragmentDestroyed) return false;
-        Context context = getContext();
-        if (context == null) return false;
+    private fun loadCache(): Boolean {
+        if (isFragmentDestroyed) return false
+        val context = getContext()
+        if (context == null) return false
 
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        Gson gson = new Gson();
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        val gson = Gson()
 
-        String carouselJson = prefs.getString(KEY_CAROUSEL_ITEMS, null);
-        String newsJson = prefs.getString(KEY_NEWS_ITEMS, null);
+        val carouselJson = prefs.getString(KEY_CAROUSEL_ITEMS, null)
+        val newsJson = prefs.getString(KEY_NEWS_ITEMS, null)
 
         if (carouselJson != null && newsJson != null) {
-            Type carouselType = new TypeToken<ArrayList<CarouselItem>>() {}.getType();
-            Type newsType = new TypeToken<ArrayList<NewsItem>>() {}.getType();
+            val carouselType = object : TypeToken<ArrayList<CarouselItem?>?>() {}.type
+            val newsType = object : TypeToken<ArrayList<NewsItem?>?>() {}.type
 
-            List<CarouselItem> cachedCarousel = gson.fromJson(carouselJson, carouselType);
-            List<NewsItem> cachedNews = gson.fromJson(newsJson, newsType);
+            val cachedCarousel =
+                gson.fromJson<MutableList<CarouselItem>?>(carouselJson, carouselType)
+            val cachedNews = gson.fromJson<MutableList<NewsItem>?>(newsJson, newsType)
 
-            if (cachedCarousel != null && cachedNews != null &&
-                    !cachedCarousel.isEmpty() && !cachedNews.isEmpty()) {
+            if (cachedCarousel != null && cachedNews != null && !cachedCarousel.isEmpty() && !cachedNews.isEmpty()) {
+                carouselItems.clear()
+                carouselItems.addAll(cachedCarousel)
 
-                carouselItems.clear();
-                carouselItems.addAll(cachedCarousel);
+                newsItems.clear()
+                newsItems.addAll(cachedNews)
 
-                newsItems.clear();
-                newsItems.addAll(cachedNews);
-
-                return true;
+                return true
             }
         }
-        return false;
+        return false
     }
 
-    private void clearCache() {
-        if (isFragmentDestroyed) return;
-        Context context = getContext();
-        if (context == null) return;
+    private fun clearCache() {
+        if (isFragmentDestroyed) return
+        val context = getContext()
+        if (context == null) return
 
-        SharedPreferences prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE);
-        prefs.edit()
-                .remove(KEY_CAROUSEL_ITEMS)
+        val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
+        prefs.edit {
+            remove(KEY_CAROUSEL_ITEMS)
                 .remove(KEY_NEWS_ITEMS)
-                .apply();
+        }
     }
 
-    private void processCarousel(Document doc, List<CarouselItem> carouselList) {
-        if (doc == null) return;
+    private fun processCarousel(doc: Document?, carouselList: MutableList<CarouselItem>) {
+        if (doc == null) return
 
-        Element carousel = doc.getElementById("home_banners_carousel");
-        if (carousel == null) return;
+        val carousel = doc.getElementById("home_banners_carousel")
+        if (carousel == null) return
 
-        Elements items = carousel.select(".carousel-item");
-        for (Element item : items) {
-            if (isFragmentDestroyed) return;
+        val items = carousel.select(".carousel-item")
+        for (item in items) {
+            if (isFragmentDestroyed) return
 
-            Element linkElem = item.selectFirst("a");
-            String linkUrl = linkElem != null ? linkElem.attr("href") : "";
-            String imgUrl = item.select("img").attr("src");
+            val linkElem = item.selectFirst("a")
+            val linkUrl = if (linkElem != null) linkElem.attr("href") else ""
+            var imgUrl = item.select("img").attr("src")
 
             if (!imgUrl.startsWith("http")) {
-                imgUrl = "https://www.colegioetapa.com.br" + imgUrl;
+                imgUrl = "https://www.colegioetapa.com.br$imgUrl"
             }
 
-            carouselList.add(new CarouselItem(imgUrl, linkUrl));
+            carouselList.add(CarouselItem(imgUrl, linkUrl))
         }
     }
 
-    private void processNews(Document doc, List<NewsItem> newsList) {
-        if (doc == null) return;
+    private fun processNews(doc: Document?, newsList: MutableList<NewsItem>) {
+        if (doc == null) return
 
-        Element newsSection = doc.selectFirst("div.col-12.col-lg-8.mb-5");
-        if (newsSection == null) return;
+        val newsSection = doc.selectFirst("div.col-12.col-lg-8.mb-5")
+        if (newsSection == null) return
 
-        Elements cards = newsSection.select(".card.border-radius-card");
-        cards.removeAll(newsSection.select("#modal-avisos-importantes .card.border-radius-card"));
+        val cards = newsSection.select(".card.border-radius-card")
+        cards.removeAll(newsSection.select("#modal-avisos-importantes .card.border-radius-card"))
 
-        for (Element card : cards) {
-            String iconUrl = card.select("img.aviso-icon").attr("src");
-            String title = card.select("p.text-blue.aviso-text").text();
-            String desc = card.select("p.m-0.aviso-text").text();
-            String link = card.select("a[target=_blank]").attr("href");
+        for (card in cards) {
+            var iconUrl = card.select("img.aviso-icon").attr("src")
+            val title = card.select("p.text-blue.aviso-text").text()
+            val desc = card.select("p.m-0.aviso-text").text()
+            val link = card.select("a[target=_blank]").attr("href")
 
             if (!iconUrl.startsWith("http")) {
-                iconUrl = "https://areaexclusiva.colegioetapa.com.br" + iconUrl;
+                iconUrl = "https://areaexclusiva.colegioetapa.com.br$iconUrl"
             }
 
             if (!isDuplicateNews(title, newsList)) {
-                newsList.add(new NewsItem(iconUrl, title, desc, link));
+                newsList.add(NewsItem(iconUrl, title, desc, link))
             }
         }
     }
 
-    private boolean isDuplicateNews(String title, List<NewsItem> newsList) {
-        for (NewsItem ni : newsList) {
-            if (ni.getTitle().equals(title)) {
-                return true;
+    private fun isDuplicateNews(title: String?, newsList: MutableList<NewsItem>): Boolean {
+        for (ni in newsList) {
+            if (ni.title == title) {
+                return true
             }
         }
-        return false;
+        return false
     }
 
-    private void navigateToWebView(String url) {
-        if (isFragmentDestroyed) return;
-        WebViewFragment fragment = new WebViewFragment();
-        fragment.setArguments(WebViewFragment.createArgs(url));
-        requireActivity().getSupportFragmentManager()
-                .beginTransaction()
-                .replace(R.id.nav_host_fragment, fragment)
-                .addToBackStack(null)
-                .commit();
+    private fun navigateToWebView(url: String) {
+        if (isFragmentDestroyed) return
+        val fragment = WebViewFragment()
+        fragment.setArguments(createArgs(url))
+        requireActivity().supportFragmentManager
+            .beginTransaction()
+            .replace(R.id.nav_host_fragment, fragment)
+            .addToBackStack(null)
+            .commit()
     }
 
-    private void showLoadingState() {
-        if (isFragmentDestroyed) return;
-        handler.post(() -> {
-            loadingContainer.setVisibility(View.VISIBLE);
-            contentContainer.setVisibility(View.GONE);
-            layoutSemInternet.setVisibility(View.GONE);
-            txtStuckHint.setVisibility(View.VISIBLE);
-        });
+    private fun showLoadingState() {
+        if (isFragmentDestroyed) return
+        handler.post(Runnable {
+            loadingContainer!!.visibility = View.VISIBLE
+            contentContainer!!.visibility = View.GONE
+            layoutSemInternet!!.visibility = View.GONE
+            txtStuckHint!!.visibility = View.VISIBLE
+        })
     }
 
-    private void showContentState() {
-        if (isFragmentDestroyed) return;
-        handler.post(() -> {
-            loadingContainer.setVisibility(View.GONE);
-            contentContainer.setVisibility(View.VISIBLE);
-            layoutSemInternet.setVisibility(View.GONE);
-            txtStuckHint.setVisibility(View.GONE);
-        });
+    private fun showContentState() {
+        if (isFragmentDestroyed) return
+        handler.post(Runnable {
+            loadingContainer!!.visibility = View.GONE
+            contentContainer!!.visibility = View.VISIBLE
+            layoutSemInternet!!.visibility = View.GONE
+            txtStuckHint!!.visibility = View.GONE
+        })
     }
 
-    private void showOfflineState() {
-        if (isFragmentDestroyed) return;
-        handler.post(() -> {
-            loadingContainer.setVisibility(View.GONE);
-            contentContainer.setVisibility(View.GONE);
-            layoutSemInternet.setVisibility(View.VISIBLE);
-            txtStuckHint.setVisibility(View.GONE);
-        });
+    private fun showOfflineState() {
+        if (isFragmentDestroyed) return
+        handler.post(Runnable {
+            loadingContainer!!.visibility = View.GONE
+            contentContainer!!.visibility = View.GONE
+            layoutSemInternet!!.visibility = View.VISIBLE
+            txtStuckHint!!.visibility = View.GONE
+        })
     }
 
-    private boolean hasInternetConnection() {
-        if (isFragmentDestroyed) return false;
-        Context context = getContext();
-        if (context == null) return false;
+    private fun hasInternetConnection(): Boolean {
+        if (isFragmentDestroyed) return false
+        val context = getContext()
+        if (context == null) return false
 
-        ConnectivityManager cm = (ConnectivityManager) context
-                .getSystemService(Context.CONNECTIVITY_SERVICE);
-        if (cm == null) return false;
+        val cm = context
+            .getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
+        if (cm == null) return false
 
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            Network network = cm.getActiveNetwork();
-            if (network == null) return false;
-            NetworkCapabilities caps = cm.getNetworkCapabilities(network);
-            return caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET);
+            val network = cm.activeNetwork
+            if (network == null) return false
+            val caps = cm.getNetworkCapabilities(network)
+            return caps != null && caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         } else {
-            NetworkInfo netInfo = cm.getActiveNetworkInfo();
-            return netInfo != null && netInfo.isConnected();
+            val netInfo = cm.activeNetworkInfo
+            return netInfo != null && netInfo.isConnected
         }
     }
 
-    private void setupCarousel() {
+    private fun setupCarousel() {
         // Configura o adapter primeiro
-        viewPager.setAdapter(new CarouselAdapter());
-        viewPager.setClipToPadding(false);
-        viewPager.setClipChildren(false);
-        viewPager.setOffscreenPageLimit(3);
+        viewPager!!.setAdapter(CarouselAdapter())
+        viewPager!!.clipToPadding = false
+        viewPager!!.setClipChildren(false)
+        viewPager!!.setOffscreenPageLimit(3)
 
         // Ajusta a altura após a view ser medida
-        viewPager.post(this::adjustCarouselHeight);
+        viewPager!!.post(Runnable { this.adjustCarouselHeight() })
     }
 
-    private void adjustCarouselHeight() {
-        if (isFragmentDestroyed || viewPager == null) return;
+    private fun adjustCarouselHeight() {
+        if (isFragmentDestroyed || viewPager == null) return
 
         // Obtém a largura atual do ViewPager2
-        int viewPagerWidth = viewPager.getWidth();
+        val viewPagerWidth = viewPager!!.width
 
         // Se a largura ainda não estiver disponível, tenta novamente
         if (viewPagerWidth <= 0) {
-            viewPager.post(this::adjustCarouselHeight);
-            return;
+            viewPager!!.post(Runnable { this.adjustCarouselHeight() })
+            return
         }
 
         // Proporção 800:300 (300/800 = 0.375)
-        int calculatedHeight = (int) (viewPagerWidth * 0.375f);
+        val calculatedHeight = (viewPagerWidth * 0.375f).toInt()
 
         // Aplica limites mínimos e máximos
-        int minHeight = (int) getResources().getDimension(R.dimen.carousel_min_height);
-        int maxHeight = (int) getResources().getDimension(R.dimen.carousel_max_height);
+        val minHeight = resources.getDimension(R.dimen.carousel_min_height).toInt()
+        val maxHeight = resources.getDimension(R.dimen.carousel_max_height).toInt()
 
-        int finalHeight = Math.max(minHeight, Math.min(calculatedHeight, maxHeight));
+        val finalHeight = max(
+            minHeight.toDouble(),
+            min(calculatedHeight.toDouble(), maxHeight.toDouble())
+        ).toInt()
 
         // Aplica a altura
-        ViewGroup.LayoutParams params = viewPager.getLayoutParams();
+        val params = viewPager!!.layoutParams
         if (params.height != finalHeight) {
-            params.height = finalHeight;
-            viewPager.setLayoutParams(params);
+            params.height = finalHeight
+            viewPager!!.setLayoutParams(params)
         }
     }
 
-    private void setupNews() {
-        newsRecyclerView.setAdapter(new NewsAdapter());
+    private fun setupNews() {
+        newsRecyclerView!!.setAdapter(NewsAdapter())
     }
 
-    private class CarouselAdapter extends RecyclerView.Adapter<CarouselViewHolder> {
-        @NonNull
-        @Override
-        public CarouselViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.item_carousel, parent, false);
-            return new CarouselViewHolder(v);
+    private inner class CarouselAdapter : RecyclerView.Adapter<CarouselViewHolder?>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): CarouselViewHolder {
+            val v = LayoutInflater.from(parent.context)
+                .inflate(R.layout.item_carousel, parent, false)
+            return CarouselViewHolder(v)
         }
 
-        @Override
-        public void onBindViewHolder(@NonNull CarouselViewHolder holder, int position) {
-            CarouselItem item = carouselItems.get(position);
-            Glide.with(holder.itemView.getContext())
-                    .load(item.getImageUrl())
-                    .centerCrop()
-                    .into(holder.imageView);
-            holder.itemView.setOnClickListener(v ->
-                    navigateToWebView(item.getLinkUrl())
-            );
+        override fun onBindViewHolder(holder: CarouselViewHolder, position: Int) {
+            val item = carouselItems[position]
+            Glide.with(holder.itemView.context)
+                .load(item.imageUrl)
+                .centerCrop()
+                .into(holder.imageView)
+            holder.itemView.setOnClickListener(View.OnClickListener { v: View? ->
+                navigateToWebView(
+                    item.linkUrl!!
+                )
+            }
+            )
         }
 
-        @Override
-        public int getItemCount() {
-            return carouselItems.size();
-        }
-    }
-
-    private class NewsAdapter extends RecyclerView.Adapter<NewsViewHolder> {
-        @NonNull
-        @Override
-        public NewsViewHolder onCreateViewHolder(@NonNull ViewGroup parent, int viewType) {
-            View v = LayoutInflater.from(parent.getContext())
-                    .inflate(R.layout.news_item, parent, false);
-            return new NewsViewHolder(v);
-        }
-
-        @Override
-        public void onBindViewHolder(@NonNull NewsViewHolder holder, int position) {
-            NewsItem item = newsItems.get(position);
-            Glide.with(holder.itemView.getContext())
-                    .load(item.getIconUrl())
-                    .into(holder.icon);
-            holder.title.setText(item.getTitle());
-            holder.description.setText(item.getDescription());
-            holder.itemView.setOnClickListener(v ->
-                    navigateToWebView(item.getLink())
-            );
-        }
-
-        @Override
-        public int getItemCount() {
-            return newsItems.size();
+        override fun getItemCount(): Int {
+            return carouselItems.size
         }
     }
 
-    static class CarouselViewHolder extends RecyclerView.ViewHolder {
-        ImageView imageView;
+    private inner class NewsAdapter : RecyclerView.Adapter<NewsViewHolder?>() {
+        override fun onCreateViewHolder(parent: ViewGroup, viewType: Int): NewsViewHolder {
+            val v = LayoutInflater.from(parent.context)
+                .inflate(R.layout.news_item, parent, false)
+            return NewsViewHolder(v)
+        }
 
-        CarouselViewHolder(View itemView) {
-            super(itemView);
-            imageView = itemView.findViewById(R.id.imageView);
+        override fun onBindViewHolder(holder: NewsViewHolder, position: Int) {
+            val item = newsItems[position]
+            Glide.with(holder.itemView.context)
+                .load(item.iconUrl)
+                .into(holder.icon)
+            holder.title.text = item.title
+            holder.description.text = item.description
+            holder.itemView.setOnClickListener(View.OnClickListener { v: View? ->
+                navigateToWebView(
+                    item.link!!
+                )
+            }
+            )
+        }
+
+        override fun getItemCount(): Int {
+            return newsItems.size
         }
     }
 
-    static class NewsViewHolder extends RecyclerView.ViewHolder {
-        ImageView icon;
-        TextView title, description;
+    internal class CarouselViewHolder(itemView: View) : RecyclerView.ViewHolder(itemView) {
+        var imageView: ImageView = itemView.findViewById<ImageView>(R.id.imageView)
+    }
 
-        NewsViewHolder(View view) {
-            super(view);
-            icon = view.findViewById(R.id.news_icon);
-            title = view.findViewById(R.id.news_title);
-            description = view.findViewById(R.id.news_description);
+    internal class NewsViewHolder(view: View) : RecyclerView.ViewHolder(view) {
+        var icon: ImageView = view.findViewById<ImageView>(R.id.news_icon)
+        var title: TextView
+        var description: TextView
+
+        init {
+            title = view.findViewById<TextView>(R.id.news_title)
+            description = view.findViewById<TextView>(R.id.news_description)
         }
     }
 
-    static class CarouselItem {
-        private String imageUrl;
-        private String linkUrl;
+    internal class CarouselItem {
+        var imageUrl: String? = null
+            private set
+        var linkUrl: String? = null
+            private set
 
-        public CarouselItem() {
-        }
-
-        public CarouselItem(String imageUrl, String linkUrl) {
-            this.imageUrl = imageUrl;
-            this.linkUrl = linkUrl;
-        }
-
-        public String getImageUrl() {
-            return imageUrl;
-        }
-
-        public String getLinkUrl() {
-            return linkUrl;
+        constructor(imageUrl: String?, linkUrl: String?) {
+            this.imageUrl = imageUrl
+            this.linkUrl = linkUrl
         }
     }
 
-    static class NewsItem {
-        private String iconUrl;
-        private String title;
-        private String description;
-        private String link;
+    internal class NewsItem {
+        var iconUrl: String? = null
+            private set
+        var title: String? = null
+            private set
+        var description: String? = null
+            private set
+        var link: String? = null
+            private set
 
-        public NewsItem() {
-        }
-
-        public NewsItem(String iconUrl, String title,
-                        String description, String link) {
-            this.iconUrl = iconUrl;
-            this.title = title;
-            this.description = description;
-            this.link = link;
-        }
-
-        public String getIconUrl() {
-            return iconUrl;
-        }
-
-        public String getTitle() {
-            return title;
-        }
-
-        public String getDescription() {
-            return description;
-        }
-
-        public String getLink() {
-            return link;
+        constructor(
+            iconUrl: String?, title: String?,
+            description: String?, link: String?
+        ) {
+            this.iconUrl = iconUrl
+            this.title = title
+            this.description = description
+            this.link = link
         }
     }
 
-    public void killFragment() {
-        if (getParentFragmentManager().isDestroyed()) return;
-        handler.removeCallbacksAndMessages(null);
-        executor.shutdownNow();
-        getParentFragmentManager().beginTransaction()
-                .remove(this)
-                .commitAllowingStateLoss();
+    companion object {
+        private const val PREFS_NAME = "HomeFragmentCache"
+        private const val KEY_CAROUSEL_ITEMS = "carousel_items"
+        private const val KEY_NEWS_ITEMS = "news_items"
+
+        private const val HOME_URL = "https://areaexclusiva.colegioetapa.com.br/home"
+        private const val OUT_URL = "https://areaexclusiva.colegioetapa.com.br"
     }
 }
