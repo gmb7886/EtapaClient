@@ -43,7 +43,7 @@ class HomeFragment : Fragment() {
     private var btnTentarNovamente: MaterialButton? = null
     private var loadingContainer: View? = null
     private var contentContainer: View? = null
-
+    private var shouldBlockNavigation = false
     private val carouselItems: MutableList<CarouselItem> = ArrayList<CarouselItem>()
     private val newsItems: MutableList<NewsItem> = ArrayList<NewsItem>()
     private var txtStuckHint: TextView? = null
@@ -67,19 +67,23 @@ class HomeFragment : Fragment() {
         savedInstanceState: Bundle?
     ) {
         super.onViewCreated(view, savedInstanceState)
+        shouldBlockNavigation = false
         initializeViews(view)
         setupRecyclerView()
         setupListeners()
         checkInternetAndLoadData()
     }
 
+    override fun onPause() {
+        super.onPause()
+        shouldBlockNavigation = true
+    }
+
     override fun onResume() {
         super.onResume()
-        if (shouldReloadOnResume) {
-            checkInternetAndLoadData()
-            shouldReloadOnResume = false
-        }
+        shouldBlockNavigation = false
     }
+
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
@@ -335,14 +339,21 @@ class HomeFragment : Fragment() {
     }
 
     private fun navigateToWebView(url: String) {
-        if (isFragmentDestroyed) return
-        val fragment = WebViewFragment()
-        fragment.setArguments(createArgs(url))
-        requireActivity().supportFragmentManager
-            .beginTransaction()
-            .replace(R.id.nav_host_fragment, fragment)
-            .addToBackStack(null)
-            .commit()
+        if (shouldBlockNavigation || isFragmentDestroyed) return
+
+        try {
+            val fragment = WebViewFragment().apply {
+                arguments = createArgs(url)
+            }
+            requireActivity().supportFragmentManager
+                .beginTransaction()
+                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                .replace(R.id.nav_host_fragment, fragment)
+                .addToBackStack(null)
+                .commitAllowingStateLoss()
+        } catch (e: IllegalStateException) {
+            Log.e("HomeFragment", "Navigation blocked: ${e.message}")
+        }
     }
 
     private fun showLoadingState() {

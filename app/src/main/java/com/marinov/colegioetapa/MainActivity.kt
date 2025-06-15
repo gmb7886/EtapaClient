@@ -14,6 +14,7 @@ import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
 import android.view.View
+import android.view.ViewTreeObserver
 import android.view.WindowManager
 import androidx.appcompat.app.AppCompatActivity
 import androidx.appcompat.app.AppCompatDelegate
@@ -37,12 +38,20 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_NOTIFICATION_PERMISSION = 100
         private const val TAG = "MainActivity"
+        private val mainMenuIds = setOf(
+            R.id.navigation_home,
+            R.id.option_calendario_provas,
+            R.id.navigation_notas,
+            R.id.option_horarios_aula
+        )
     }
 
     private var currentFragment: Fragment? = null
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var navRail: NavigationRailView
-    private var isHandlingNavigation = false
+    private var isLayoutReady = false
+    private var currentFragmentId = View.NO_ID
+    private var isUpdatingSelection = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -72,11 +81,28 @@ class MainActivity : AppCompatActivity() {
         bottomNav = findViewById(R.id.bottom_navigation)
         navRail = findViewById(R.id.navigation_rail)
 
-        configureNavigationForDevice()
+        // Aguardar layout estar pronto
+        val rootView = findViewById<View>(R.id.main)
+        rootView.viewTreeObserver.addOnGlobalLayoutListener(object : ViewTreeObserver.OnGlobalLayoutListener {
+            override fun onGlobalLayout() {
+                if (isLayoutReady) return
 
-        if (savedInstanceState == null) {
-            handleShortcutIntent(intent)
-        }
+                // Remover listener após primeira execução
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
+                    rootView.viewTreeObserver.removeOnGlobalLayoutListener(this)
+                } else {
+                    @Suppress("DEPRECATION")
+                    rootView.viewTreeObserver.removeGlobalOnLayoutListener(this)
+                }
+                isLayoutReady = true
+
+                // Configurar navegação após o layout estar pronto
+                configureNavigationForDevice()
+
+                // Processar intenção inicial
+                handleIntent(intent)
+            }
+        })
 
         solicitarPermissaoNotificacao()
         iniciarNotasWorker()
@@ -85,68 +111,77 @@ class MainActivity : AppCompatActivity() {
 
     override fun onNewIntent(intent: Intent?) {
         super.onNewIntent(intent)
-        handleShortcutIntent(intent)
+        setIntent(intent)
+        // Processar imediatamente se o layout estiver pronto
+        if (isLayoutReady) {
+            handleIntent(intent)
+        }
     }
 
-    private fun handleShortcutIntent(intent: Intent?) {
-        val destination = intent?.getStringExtra("destination") ?: return
-        Log.d(TAG, "Handling shortcut intent: $destination")
+    private fun handleIntent(intent: Intent?) {
+        val destination = intent?.getStringExtra("destination") ?: run {
+            // Se não há destino, e ainda não há fragmento, abrir a tela inicial
+            if (currentFragment == null) {
+                openFragment(R.id.navigation_home)
+            }
+            return
+        }
+
+        Log.d(TAG, "Handling intent with destination: $destination")
 
         when (destination) {
-            "notas" -> navigateToFragment(R.id.navigation_notas)
-            "horarios" -> navigateToFragment(R.id.option_horarios_aula)
-            "provas" -> navigateToFragment(R.id.option_calendario_provas)
+            "notas" -> openFragment(R.id.navigation_notas)
+            "horarios" -> openFragment(R.id.option_horarios_aula)
+            "provas" -> openFragment(R.id.option_calendario_provas)
         }
     }
 
-    private fun navigateToFragment(fragmentId: Int) {
-        if (isHandlingNavigation) return
+    private fun openFragment(fragmentId: Int) {
+        if (isFinishing || isDestroyed) return
+        if (currentFragmentId == fragmentId) return  // Evitar reabrir o mesmo fragmento
 
-        isHandlingNavigation = true
-        Log.d(TAG, "Navigating to fragment: $fragmentId")
+        Log.d(TAG, "Opening fragment: $fragmentId")
 
-        try {
-            val fragment = when (fragmentId) {
-                R.id.navigation_home -> HomeFragment()
-                R.id.option_calendario_provas -> CalendarioProvas()
-                R.id.navigation_notas -> NotasFragment()
-                R.id.option_horarios_aula -> HorariosAula()
-                R.id.action_profile -> ProfileFragment()
-                else -> return
-            }
-
-            if (currentFragment?.javaClass != fragment.javaClass) {
-                currentFragment = fragment
-                supportFragmentManager.beginTransaction()
-                    .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-                    .replace(R.id.nav_host_fragment, fragment)
-                    .commit()
-            }
-
-            updateMenuSelection(fragmentId)
-        } finally {
-            isHandlingNavigation = false
+        val fragment = when (fragmentId) {
+            R.id.navigation_home -> HomeFragment()
+            R.id.option_calendario_provas -> CalendarioProvas()
+            R.id.navigation_notas -> NotasFragment()
+            R.id.option_horarios_aula -> HorariosAula()
+            R.id.action_profile -> ProfileFragment()
+            else -> return
         }
+
+        currentFragment = fragment
+        currentFragmentId = fragmentId
+
+        supportFragmentManager.beginTransaction()
+            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+            .replace(R.id.nav_host_fragment, fragment)
+            .commit()
+
+        updateMenuSelection(fragmentId)
     }
 
     private fun updateMenuSelection(fragmentId: Int) {
-        if (isHandlingNavigation) return
+        if (isUpdatingSelection) return
 
         Log.d(TAG, "Updating menu selection to: $fragmentId")
-        isHandlingNavigation = true
 
-        try {
-            if (resources.getBoolean(R.bool.isTablet)) {
-                if (navRail.selectedItemId != fragmentId) {
-                    navRail.selectedItemId = fragmentId
+        isUpdatingSelection = true
+        runOnUiThread {
+            try {
+                if (resources.getBoolean(R.bool.isTablet)) {
+                    if (navRail.selectedItemId != fragmentId) {
+                        navRail.selectedItemId = fragmentId
+                    }
+                } else {
+                    if (bottomNav.selectedItemId != fragmentId) {
+                        bottomNav.selectedItemId = fragmentId
+                    }
                 }
-            } else {
-                if (bottomNav.selectedItemId != fragmentId) {
-                    bottomNav.selectedItemId = fragmentId
-                }
+            } finally {
+                isUpdatingSelection = false
             }
-        } finally {
-            isHandlingNavigation = false
         }
     }
 
@@ -156,20 +191,43 @@ class MainActivity : AppCompatActivity() {
         if (isTablet) {
             bottomNav.visibility = View.GONE
             navRail.visibility = View.VISIBLE
+
+            // Configurar o listener
             navRail.setOnItemSelectedListener { item ->
-                if (!isHandlingNavigation && item.itemId != R.id.navigation_more) {
-                    navigateToFragment(item.itemId)
+                if (isUpdatingSelection) return@setOnItemSelectedListener true
+
+                if (item.itemId == R.id.navigation_more) {
+                    showMoreOptions()
+                    false
+                } else {
+                    openFragment(item.itemId)
+                    true
                 }
-                true
+            }
+
+            // Definir item inicial selecionado apenas visualmente
+            if (currentFragmentId == View.NO_ID) {
+                navRail.selectedItemId = R.id.navigation_home
             }
         } else {
             navRail.visibility = View.GONE
             bottomNav.visibility = View.VISIBLE
+
             bottomNav.setOnItemSelectedListener { item ->
-                if (!isHandlingNavigation && item.itemId != R.id.navigation_more) {
-                    navigateToFragment(item.itemId)
+                if (isUpdatingSelection) return@setOnItemSelectedListener true
+
+                if (item.itemId == R.id.navigation_more) {
+                    showMoreOptions()
+                    false
+                } else {
+                    openFragment(item.itemId)
+                    true
                 }
-                true
+            }
+
+            // Definir item inicial selecionado apenas visualmente
+            if (currentFragmentId == View.NO_ID) {
+                bottomNav.selectedItemId = R.id.navigation_home
             }
 
             val rootView: View = findViewById(R.id.main)
@@ -295,68 +353,72 @@ class MainActivity : AppCompatActivity() {
         val dialog = BottomSheetDialog(this)
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_more_options, null)
 
-        view.findViewById<View>(R.id.navigation_provas).setOnClickListener {
-            navigateToFragment(ProvasFragment(), dialog)
+        view.findViewById<View>(R.id.navigation_provas)?.setOnClickListener {
+            openCustomFragment(ProvasFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_digital).setOnClickListener {
-            navigateToFragment(DigitalFragment(), dialog)
+        view.findViewById<View>(R.id.option_digital)?.setOnClickListener {
+            openCustomFragment(DigitalFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_link).setOnClickListener {
-            navigateToFragment(LinkFragment(), dialog)
+        view.findViewById<View>(R.id.option_link)?.setOnClickListener {
+            openCustomFragment(LinkFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_acc_detalhes).setOnClickListener {
-            navigateToFragment(AccFragment(), dialog)
+        view.findViewById<View>(R.id.option_acc_detalhes)?.setOnClickListener {
+            openCustomFragment(AccFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_acc_inscricao).setOnClickListener {
-            navigateToFragment(InscricaoAccFragment(), dialog)
+        view.findViewById<View>(R.id.option_acc_inscricao)?.setOnClickListener {
+            openCustomFragment(InscricaoAccFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_escreve_enviar).setOnClickListener {
-            navigateToFragment(EscreveEnviarFragment(), dialog)
+        view.findViewById<View>(R.id.option_escreve_enviar)?.setOnClickListener {
+            openCustomFragment(EscreveEnviarFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_escreve_ver).setOnClickListener {
-            navigateToFragment(EscreveVerFragment(), dialog)
+        view.findViewById<View>(R.id.option_escreve_ver)?.setOnClickListener {
+            openCustomFragment(EscreveVerFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_redacao_semanal).setOnClickListener {
-            navigateToFragment(RedacaoSemanalFragment(), dialog)
+        view.findViewById<View>(R.id.option_redacao_semanal)?.setOnClickListener {
+            openCustomFragment(RedacaoSemanalFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_boletim_simulados).setOnClickListener {
-            navigateToFragment(BoletimSimuladosFragment(), dialog)
+        view.findViewById<View>(R.id.option_boletim_simulados)?.setOnClickListener {
+            openCustomFragment(BoletimSimuladosFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_graficos).setOnClickListener {
-            navigateToFragment(GraficosFragment(), dialog)
+        view.findViewById<View>(R.id.option_graficos)?.setOnClickListener {
+            openCustomFragment(GraficosFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_provas_gabaritos).setOnClickListener {
-            navigateToFragment(ProvasGabaritos(), dialog)
+        view.findViewById<View>(R.id.option_provas_gabaritos)?.setOnClickListener {
+            openCustomFragment(ProvasGabaritos(), dialog)
         }
-        view.findViewById<View>(R.id.option_detalhes_provas).setOnClickListener {
-            navigateToFragment(DetalhesProvas(), dialog)
+        view.findViewById<View>(R.id.option_detalhes_provas)?.setOnClickListener {
+            openCustomFragment(DetalhesProvas(), dialog)
         }
-        view.findViewById<View>(R.id.navigation_material).setOnClickListener {
-            navigateToFragment(MaterialFragment(), dialog)
+        view.findViewById<View>(R.id.navigation_material)?.setOnClickListener {
+            openCustomFragment(MaterialFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_plantao_duvidas).setOnClickListener {
-            navigateToFragment(PlantaoDuvidas(), dialog)
+        view.findViewById<View>(R.id.option_plantao_duvidas)?.setOnClickListener {
+            openCustomFragment(PlantaoDuvidas(), dialog)
         }
-        view.findViewById<View>(R.id.option_food).setOnClickListener {
-            navigateToFragment(CardapioFragment(), dialog)
+        view.findViewById<View>(R.id.option_food)?.setOnClickListener {
+            openCustomFragment(CardapioFragment(), dialog)
         }
-        view.findViewById<View>(R.id.option_plantao_duvidas_online).setOnClickListener {
-            navigateToFragment(PlantaoDuvidasOnline(), dialog)
+        view.findViewById<View>(R.id.option_plantao_duvidas_online)?.setOnClickListener {
+            openCustomFragment(PlantaoDuvidasOnline(), dialog)
         }
-        view.findViewById<View>(R.id.option_ead).setOnClickListener {
-            navigateToFragment(EADFragment(), dialog)
+        view.findViewById<View>(R.id.option_ead)?.setOnClickListener {
+            openCustomFragment(EADFragment(), dialog)
         }
 
         dialog.setContentView(view)
         dialog.show()
     }
 
-    private fun navigateToFragment(fragment: Fragment, dialog: BottomSheetDialog) {
+    private fun openCustomFragment(fragment: Fragment, dialog: BottomSheetDialog) {
         currentFragment = fragment
+        currentFragmentId = View.NO_ID
+
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
             .replace(R.id.nav_host_fragment, fragment)
             .commit()
         dialog.dismiss()
+        updateMenuSelection(View.NO_ID)
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -371,7 +433,7 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             R.id.action_profile -> {
-                navigateToFragment(R.id.action_profile)
+                openFragment(R.id.action_profile)
                 true
             }
             else -> super.onOptionsItemSelected(item)
@@ -383,6 +445,7 @@ class MainActivity : AppCompatActivity() {
             arguments = WebViewFragment.createArgs(url)
         }
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
             .replace(R.id.nav_host_fragment, fragment)
             .addToBackStack(null)
             .commit()
@@ -391,12 +454,13 @@ class MainActivity : AppCompatActivity() {
     fun abrirDetalhesProva(url: String) {
         val fragment = DetalhesProvaFragment.newInstance(url)
         supportFragmentManager.beginTransaction()
+            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
             .replace(R.id.nav_host_fragment, fragment)
             .addToBackStack(null)
             .commit()
     }
 
     fun navigateToHome() {
-        navigateToFragment(R.id.navigation_home)
+        openFragment(R.id.navigation_home)
     }
 }
