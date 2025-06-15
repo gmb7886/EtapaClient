@@ -9,6 +9,7 @@ import android.graphics.Color
 import android.graphics.Rect
 import android.os.Build
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.Menu
 import android.view.MenuItem
@@ -35,11 +36,13 @@ class MainActivity : AppCompatActivity() {
 
     companion object {
         private const val REQUEST_NOTIFICATION_PERMISSION = 100
+        private const val TAG = "MainActivity"
     }
 
     private var currentFragment: Fragment? = null
     private lateinit var bottomNav: BottomNavigationView
     private lateinit var navRail: NavigationRailView
+    private var isHandlingNavigation = false
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -69,24 +72,10 @@ class MainActivity : AppCompatActivity() {
         bottomNav = findViewById(R.id.bottom_navigation)
         navRail = findViewById(R.id.navigation_rail)
 
-        // Configurar navegação para tablet/celular
         configureNavigationForDevice()
 
-        // Se veio extra para abrir Notas diretamente
-        val targetItem = intent.getIntExtra("EXTRA_NAV_ITEM_ID", -1)
-        if (targetItem == R.id.navigation_notas) {
-            if (resources.getBoolean(R.bool.isTablet)) {
-                navRail.selectedItemId = targetItem
-            } else {
-                bottomNav.selectedItemId = targetItem
-            }
-        }
-
         if (savedInstanceState == null) {
-            currentFragment = HomeFragment()
-            supportFragmentManager.beginTransaction()
-                .add(R.id.nav_host_fragment, currentFragment!!)
-                .commit()
+            handleShortcutIntent(intent)
         }
 
         solicitarPermissaoNotificacao()
@@ -94,21 +83,95 @@ class MainActivity : AppCompatActivity() {
         iniciarUpdateWorker()
     }
 
+    override fun onNewIntent(intent: Intent?) {
+        super.onNewIntent(intent)
+        handleShortcutIntent(intent)
+    }
+
+    private fun handleShortcutIntent(intent: Intent?) {
+        val destination = intent?.getStringExtra("destination") ?: return
+        Log.d(TAG, "Handling shortcut intent: $destination")
+
+        when (destination) {
+            "notas" -> navigateToFragment(R.id.navigation_notas)
+            "horarios" -> navigateToFragment(R.id.option_horarios_aula)
+            "provas" -> navigateToFragment(R.id.option_calendario_provas)
+        }
+    }
+
+    private fun navigateToFragment(fragmentId: Int) {
+        if (isHandlingNavigation) return
+
+        isHandlingNavigation = true
+        Log.d(TAG, "Navigating to fragment: $fragmentId")
+
+        try {
+            val fragment = when (fragmentId) {
+                R.id.navigation_home -> HomeFragment()
+                R.id.option_calendario_provas -> CalendarioProvas()
+                R.id.navigation_notas -> NotasFragment()
+                R.id.option_horarios_aula -> HorariosAula()
+                R.id.action_profile -> ProfileFragment()
+                else -> return
+            }
+
+            if (currentFragment?.javaClass != fragment.javaClass) {
+                currentFragment = fragment
+                supportFragmentManager.beginTransaction()
+                    .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
+                    .replace(R.id.nav_host_fragment, fragment)
+                    .commit()
+            }
+
+            updateMenuSelection(fragmentId)
+        } finally {
+            isHandlingNavigation = false
+        }
+    }
+
+    private fun updateMenuSelection(fragmentId: Int) {
+        if (isHandlingNavigation) return
+
+        Log.d(TAG, "Updating menu selection to: $fragmentId")
+        isHandlingNavigation = true
+
+        try {
+            if (resources.getBoolean(R.bool.isTablet)) {
+                if (navRail.selectedItemId != fragmentId) {
+                    navRail.selectedItemId = fragmentId
+                }
+            } else {
+                if (bottomNav.selectedItemId != fragmentId) {
+                    bottomNav.selectedItemId = fragmentId
+                }
+            }
+        } finally {
+            isHandlingNavigation = false
+        }
+    }
+
     private fun configureNavigationForDevice() {
         val isTablet = resources.getBoolean(R.bool.isTablet)
 
         if (isTablet) {
-            // Modo tablet - usar Navigation Rail
             bottomNav.visibility = View.GONE
             navRail.visibility = View.VISIBLE
-            navRail.setOnItemSelectedListener { handleNavigation(it) }
+            navRail.setOnItemSelectedListener { item ->
+                if (!isHandlingNavigation && item.itemId != R.id.navigation_more) {
+                    navigateToFragment(item.itemId)
+                }
+                true
+            }
         } else {
-            // Modo celular - usar Bottom Navigation
             navRail.visibility = View.GONE
             bottomNav.visibility = View.VISIBLE
-            bottomNav.setOnItemSelectedListener { handleNavigation(it) }
+            bottomNav.setOnItemSelectedListener { item ->
+                if (!isHandlingNavigation && item.itemId != R.id.navigation_more) {
+                    navigateToFragment(item.itemId)
+                }
+                true
+            }
 
-            // Manter o código existente para ocultar ao abrir teclado
             val rootView: View = findViewById(R.id.main)
             rootView.viewTreeObserver.addOnGlobalLayoutListener {
                 val r = Rect()
@@ -116,19 +179,6 @@ class MainActivity : AppCompatActivity() {
                 val screenHeight = rootView.rootView.height
                 val keypadHeight = screenHeight - r.bottom
                 bottomNav.visibility = if (keypadHeight > screenHeight * 0.15) View.GONE else View.VISIBLE
-            }
-        }
-    }
-
-    override fun onNewIntent(intent: Intent?) {
-        super.onNewIntent(intent)
-        setIntent(intent)
-        val target = intent?.getIntExtra("EXTRA_NAV_ITEM_ID", -1) ?: -1
-        if (target == R.id.navigation_notas) {
-            if (resources.getBoolean(R.bool.isTablet)) {
-                navRail.selectedItemId = target
-            } else {
-                bottomNav.selectedItemId = target
             }
         }
     }
@@ -148,7 +198,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun configureSystemBarsForLegacyDevices() {
-        // Aplicar apenas para Android 9 (Pie) e versões anteriores
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             val isDarkMode = when (AppCompatDelegate.getDefaultNightMode()) {
                 AppCompatDelegate.MODE_NIGHT_YES -> true
@@ -164,21 +213,16 @@ class MainActivity : AppCompatActivity() {
                     clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
                     addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
 
-                    // Android 7.1 ou inferior - Barras pretas sólidas
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1) {
                         statusBarColor = Color.BLACK
                         navigationBarColor = Color.BLACK
 
-                        // NOVA IMPLEMENTAÇÃO: Forçar ícones brancos
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             var flags = decorView.systemUiVisibility
-                            // Remove qualquer flag de ícones escuros
                             flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
                             decorView.systemUiVisibility = flags
                         }
-                    }
-                    // Android 8.0-9.0: Mantém correções anteriores
-                    else {
+                    } else {
                         navigationBarColor = if (isDarkMode) {
                             ContextCompat.getColor(this@MainActivity, R.color.nav_bar_dark)
                         } else {
@@ -188,22 +232,18 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            // Controle de ícones para barra de status (Android 8.0+)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 var flags = window.decorView.systemUiVisibility
 
                 if (isDarkMode) {
-                    // Tema escuro: remove flag de ícones escuros
                     flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
                 } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
-                    // Tema claro apenas para versões superiores a Nougat
                     flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 }
 
                 window.decorView.systemUiVisibility = flags
             }
 
-            // Controle de ícones para barra de navegação no tema claro (Android 8.0+)
             if (!isDarkMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 var flags = window.decorView.systemUiVisibility
                 flags = flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
@@ -250,38 +290,11 @@ class MainActivity : AppCompatActivity() {
         super.onRequestPermissionsResult(requestCode, permissions, grantResults)
     }
 
-    private fun handleNavigation(item: MenuItem): Boolean {
-        val id = item.itemId
-        var newFragment: Fragment? = null
-
-        when (id) {
-            R.id.navigation_home -> newFragment = HomeFragment()
-            R.id.option_calendario_provas -> newFragment = CalendarioProvas()
-            R.id.navigation_notas -> newFragment = NotasFragment()
-            R.id.option_horarios_aula -> newFragment = HorariosAula()
-            R.id.navigation_more -> {
-                showMoreOptions()
-                return false
-            }
-        }
-
-        if (newFragment != null && newFragment != currentFragment) {
-            currentFragment = newFragment
-            supportFragmentManager.beginTransaction()
-                .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-                .replace(R.id.nav_host_fragment, newFragment)
-                .commit()
-            return true
-        }
-        return false
-    }
-
     @SuppressLint("InflateParams")
     private fun showMoreOptions() {
         val dialog = BottomSheetDialog(this)
         val view = LayoutInflater.from(this).inflate(R.layout.dialog_more_options, null)
 
-        // Configuração dos listeners
         view.findViewById<View>(R.id.navigation_provas).setOnClickListener {
             navigateToFragment(ProvasFragment(), dialog)
         }
@@ -358,15 +371,13 @@ class MainActivity : AppCompatActivity() {
                 true
             }
             R.id.action_profile -> {
-                currentFragment = ProfileFragment()
-                supportFragmentManager.beginTransaction()
-                    .replace(R.id.nav_host_fragment, currentFragment!!)
-                    .commit()
+                navigateToFragment(R.id.action_profile)
                 true
             }
             else -> super.onOptionsItemSelected(item)
         }
     }
+
     fun abrirWebView(url: String) {
         val fragment = WebViewFragment().apply {
             arguments = WebViewFragment.createArgs(url)
@@ -376,6 +387,7 @@ class MainActivity : AppCompatActivity() {
             .addToBackStack(null)
             .commit()
     }
+
     fun abrirDetalhesProva(url: String) {
         val fragment = DetalhesProvaFragment.newInstance(url)
         supportFragmentManager.beginTransaction()
@@ -383,11 +395,8 @@ class MainActivity : AppCompatActivity() {
             .addToBackStack(null)
             .commit()
     }
+
     fun navigateToHome() {
-        if (resources.getBoolean(R.bool.isTablet)) {
-            navRail.selectedItemId = R.id.navigation_home
-        } else {
-            bottomNav.selectedItemId = R.id.navigation_home
-        }
+        navigateToFragment(R.id.navigation_home)
     }
 }

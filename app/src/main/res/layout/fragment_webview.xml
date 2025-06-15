@@ -86,15 +86,13 @@
     <LinearLayout
         android:id="@+id/layout_sem_internet"
         android:layout_width="match_parent"
-        android:layout_height="wrap_content"
+        android:layout_height="match_parent"
         android:orientation="vertical"
         android:gravity="center"
-        android:visibility="gone"
         android:padding="24dp"
-        app:layout_constraintTop_toTopOf="parent"
-        app:layout_constraintBottom_toBottomOf="parent"
-        app:layout_constraintStart_toStartOf="parent"
-        app:layout_constraintEnd_toEndOf="parent">
+        android:visibility="gone"
+        android:background="@color/fundocartao"
+        android:paddingBottom="?attr/actionBarSize">
 
         <ImageView
             android:layout_width="64dp"
@@ -116,6 +114,5 @@
             android:layout_marginTop="24dp"
             android:text="Tentar novamente"
             style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

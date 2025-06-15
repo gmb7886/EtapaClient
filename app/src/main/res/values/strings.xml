@@ -21,6 +21,12 @@
     <string name="sem_conexao_mensagem">Você está offline. Conecte-se à internet para acessar as provas.</string>
     <string name="tentar_novamente">Tentar novamente</string>
 
+    <string name="shortcut_notas_short">Notas</string>
+    <string name="shortcut_notas_long">Notas</string>
+    <string name="shortcut_horarios_short">Horários de aula</string>
+    <string name="shortcut_horarios_long">Horários de aula</string>
+    <string name="shortcut_provas_short">Calendário de provas</string>
+    <string name="shortcut_provas_long">Calendário de provas</string>
 
     <string name="sem_redacoes_disponiveis">Nenhuma redação encontrada.</string>
 </resources>
