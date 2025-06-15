@@ -4,7 +4,7 @@
     <shortcut
         android:shortcutId="notas"
         android:enabled="true"
-        android:icon="@drawable/ic_notes"
+        android:icon="@drawable/ic_notes_2"
         android:shortcutShortLabel="@string/shortcut_notas_short"
         android:shortcutLongLabel="@string/shortcut_notas_long">
         <intent
@@ -20,7 +20,7 @@
     <shortcut
         android:shortcutId="horarios"
         android:enabled="true"
-        android:icon="@drawable/ic_horarios_aula"
+        android:icon="@drawable/ic_horarios_aula_2"
         android:shortcutShortLabel="@string/shortcut_horarios_short"
         android:shortcutLongLabel="@string/shortcut_horarios_long">
         <intent
@@ -36,7 +36,7 @@
     <shortcut
         android:shortcutId="provas"
         android:enabled="true"
-        android:icon="@drawable/ic_calendario_provas"
+        android:icon="@drawable/ic_calendario_provas_2"
         android:shortcutShortLabel="@string/shortcut_provas_short"
         android:shortcutLongLabel="@string/shortcut_provas_long">
         <intent
