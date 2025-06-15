@@ -31,8 +31,11 @@ import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import org.json.JSONArray
+import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import java.util.Calendar
 
 class CalendarioProvas : Fragment() {
 
@@ -45,6 +48,8 @@ class CalendarioProvas : Fragment() {
         const val FILTRO_TODOS = 0
         const val FILTRO_PROVAS = 1
         const val FILTRO_RECUPERACOES = 2
+        const val PREFS_WIDGET = "widget_provas_prefs"
+        const val KEY_PROVAS = "provas_data"
     }
     private lateinit var recyclerProvas: RecyclerView
     private lateinit var progressBar: CircularProgressIndicator
@@ -110,6 +115,40 @@ class CalendarioProvas : Fragment() {
         recyclerProvas.layoutManager = LinearLayoutManager(requireContext())
         adapter = ProvasAdapter(emptyList(), this)
         recyclerProvas.adapter = adapter
+    }
+
+    private fun salvarDadosParaWidget(provas: List<ProvaItem>) {
+        val calendar = Calendar.getInstance()
+        val mesAtual = calendar.get(Calendar.MONTH) + 1 // Janeiro=0, então +1
+
+        // Filtrar apenas provas do mês atual
+        val provasMesAtual = provas.filter { prova ->
+            val partesData = prova.data.split("/")
+            if (partesData.size >= 2) {
+                partesData[1].toIntOrNull() == mesAtual
+            } else {
+                false
+            }
+        }
+
+        // Converter para JSON
+        val jsonArray = JSONArray()
+        provasMesAtual.forEach { prova ->
+            jsonArray.put(JSONObject().apply {
+                put("data", prova.data)
+                put("codigo", prova.codigo)
+                put("tipo", prova.tipo)
+            })
+        }
+
+        // Salvar nas preferências
+        val prefs = requireContext().getSharedPreferences(PREFS_WIDGET, Context.MODE_PRIVATE)
+        prefs.edit {
+            putString(KEY_PROVAS, jsonArray.toString())
+        }
+
+        // Atualizar o widget
+        ProvasWidget.updateWidget(requireContext())
     }
 
     private fun configurarSpinnerMeses() {
@@ -304,6 +343,9 @@ class CalendarioProvas : Fragment() {
 
         adapter.setDadosOriginais(items)
         adapter.aplicarFiltro(filtroAtual)
+
+        // Salvar dados para o widget
+        salvarDadosParaWidget(items)
     }
 
     private inner class ProvasAdapter(
@@ -332,6 +374,7 @@ class CalendarioProvas : Fragment() {
             if (items.isEmpty()) {
                 txtSemProvas.visibility = View.VISIBLE
                 recyclerProvas.visibility = View.GONE
+            } else {
                 txtSemProvas.visibility = View.GONE
                 recyclerProvas.visibility = View.VISIBLE
             }

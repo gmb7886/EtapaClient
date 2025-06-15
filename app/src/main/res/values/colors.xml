@@ -21,6 +21,7 @@
     <color name="nav_bar_light">#E9EFF7</color>
     <color name="nav_bar_dark">#E9EFF7</color>
     <color name="fundocartao">#FFFFFF</color>
+    <color name="white">#FFFFFF</color>
     <color name="badge_text_normal">#FDFDFD</color>
     <color name="badge_text_recuperacao">#000000</color>
     <color name="faixaA">#33CC00</color>
@@ -30,4 +31,5 @@
     <color name="faixaD">#CC5200</color>
     <color name="faixaE">#CC0000</color>
     <color name="faixaDefault">#888888</color>
+    <color name="widget_text_primary">#FF000000</color>
 </resources>
