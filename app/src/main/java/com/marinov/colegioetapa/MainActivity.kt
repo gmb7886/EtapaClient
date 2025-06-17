@@ -138,7 +138,6 @@ class MainActivity : AppCompatActivity() {
 
     private fun openFragment(fragmentId: Int) {
         if (isFinishing || isDestroyed) return
-        if (currentFragmentId == fragmentId) return  // Evitar reabrir o mesmo fragmento
 
         Log.d(TAG, "Opening fragment: $fragmentId")
 
