@@ -37,7 +37,7 @@
         android:layout_weight="1"
         android:orientation="horizontal"
         android:weightSum="7"
-        android:divider="@drawable/divider_vertical"
+        android:divider="@drawable/divider_vertical_dark"
         android:showDividers="middle"/>
 
     <LinearLayout
@@ -47,7 +47,7 @@
         android:layout_weight="1"
         android:orientation="horizontal"
         android:weightSum="7"
-        android:divider="@drawable/divider_vertical"
+        android:divider="@drawable/divider_vertical_dark"
         android:showDividers="middle"/>
 
     <LinearLayout
@@ -57,7 +57,7 @@
         android:layout_weight="1"
         android:orientation="horizontal"
         android:weightSum="7"
-        android:divider="@drawable/divider_vertical"
+        android:divider="@drawable/divider_vertical_dark"
         android:showDividers="middle"/>
 
     <LinearLayout
@@ -67,7 +67,7 @@
         android:layout_weight="1"
         android:orientation="horizontal"
         android:weightSum="7"
-        android:divider="@drawable/divider_vertical"
+        android:divider="@drawable/divider_vertical_dark"
         android:showDividers="middle"/>
 
     <LinearLayout
@@ -77,7 +77,7 @@
         android:layout_weight="1"
         android:orientation="horizontal"
         android:weightSum="7"
-        android:divider="@drawable/divider_vertical"
+        android:divider="@drawable/divider_vertical_dark"
         android:showDividers="middle"/>
 
     <LinearLayout
@@ -87,6 +87,6 @@
         android:layout_weight="1"
         android:orientation="horizontal"
         android:weightSum="7"
-        android:divider="@drawable/divider_vertical"
+        android:divider="@drawable/divider_vertical_dark"
         android:showDividers="middle"/>
 </LinearLayout>
