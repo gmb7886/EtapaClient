@@ -3,6 +3,7 @@ package com.marinov.colegioetapa
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
+import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
 import android.os.Build
@@ -25,7 +26,19 @@ class ProvasWidgetDark : AppWidgetProvider() {
             R.id.week1, R.id.week2, R.id.week3, R.id.week4, R.id.week5, R.id.week6
         )
 
+        fun updateWidget(context: Context) {
+            try {
+                val appWidgetManager = AppWidgetManager.getInstance(context)
+                val componentName = ComponentName(context, ProvasWidget::class.java)
+                val ids = appWidgetManager.getAppWidgetIds(componentName)
 
+                for (appWidgetId in ids) {
+                    updateAppWidget(context, appWidgetManager, appWidgetId)
+                }
+            } catch (e: Exception) {
+                Log.e(TAG, "Falha ao atualizar widget", e)
+            }
+        }
 
         private fun updateAppWidget(
             context: Context,
@@ -34,7 +47,10 @@ class ProvasWidgetDark : AppWidgetProvider() {
         ) {
             try {
                 val views = buildRemoteViews(context)
-                val intent = Intent(context, MainActivity::class.java)
+                val intent = Intent(context, MainActivity::class.java).apply {
+                    putExtra("destination", "provas")
+                    flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+                }
                 val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                     PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 } else {
@@ -142,7 +158,7 @@ class ProvasWidgetDark : AppWidgetProvider() {
                 views
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao construir RemoteViews", e)
-                RemoteViews(context.packageName, R.layout.widget_error_dark).apply {
+                RemoteViews(context.packageName, R.layout.widget_error).apply {
                     setTextViewText(R.id.widget_error_text, "Erro: ${e.localizedMessage}")
                 }
             }
@@ -169,7 +185,7 @@ class ProvasWidgetDark : AppWidgetProvider() {
                     cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.white))
                 }
             } else {
-                cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.white))
+                cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.text_secondary))
             }
 
             // Processar provas
