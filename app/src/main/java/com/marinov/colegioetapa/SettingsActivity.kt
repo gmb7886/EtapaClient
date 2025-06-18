@@ -64,7 +64,6 @@ class SettingsActivity : AppCompatActivity() {
         setupToolbarInsets()
     }
     private fun configureSystemBarsForLegacyDevices() {
-        // Aplicar apenas para Android 9 (Pie) e versões anteriores
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             val isDarkMode = when (AppCompatDelegate.getDefaultNightMode()) {
                 AppCompatDelegate.MODE_NIGHT_YES -> true
@@ -80,20 +79,16 @@ class SettingsActivity : AppCompatActivity() {
                     clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
                     addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
 
-                    // Android 7.1 ou inferior - Barras pretas sólidas
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1) {
                         statusBarColor = Color.BLACK
                         navigationBarColor = Color.BLACK
 
-                        // NOVA IMPLEMENTAÇÃO: Forçar ícones brancos
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                             var flags = decorView.systemUiVisibility
-                            // Remove qualquer flag de ícones escuros
                             flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
                             decorView.systemUiVisibility = flags
                         }
                     }
-                    // Android 8.0-9.0: Mantém correções anteriores
                     else {
                         navigationBarColor = if (isDarkMode) {
                             ContextCompat.getColor(this@SettingsActivity, R.color.fundocartao)
@@ -104,22 +99,18 @@ class SettingsActivity : AppCompatActivity() {
                 }
             }
 
-            // Controle de ícones para barra de status (Android 8.0+)
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
                 var flags = window.decorView.systemUiVisibility
 
                 if (isDarkMode) {
-                    // Tema escuro: remove flag de ícones escuros
                     flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
                 } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
-                    // Tema claro apenas para versões superiores a Nougat
                     flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 }
 
                 window.decorView.systemUiVisibility = flags
             }
 
-            // Controle de ícones para barra de navegação no tema claro (Android 8.0+)
             if (!isDarkMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
                 var flags = window.decorView.systemUiVisibility
                 flags = flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
@@ -263,7 +254,7 @@ class SettingsActivity : AppCompatActivity() {
             val latest = release.getString("tag_name")
             val current = BuildConfig.VERSION_NAME
 
-            if (isVersionGreater(latest, current)) {
+            if (UpdateChecker.isVersionGreater(latest, current)) {
                 val assets = release.getJSONArray("assets")
                 var apkUrl: String? = null
                 for (i in 0 until assets.length()) {
@@ -278,23 +269,6 @@ class SettingsActivity : AppCompatActivity() {
                 showMessage()
             }
         }
-    }
-
-    // Função para comparar versões semanticamente (idêntica à do UpdateChecker)
-    private fun isVersionGreater(newVersion: String, currentVersion: String): Boolean {
-        val newParts = newVersion.split(".").map { it.toIntOrNull() ?: 0 }
-        val currentParts = currentVersion.split(".").map { it.toIntOrNull() ?: 0 }
-
-        for (i in 0 until maxOf(newParts.size, currentParts.size)) {
-            val newPart = newParts.getOrElse(i) { 0 }
-            val currentPart = currentParts.getOrElse(i) { 0 }
-
-            when {
-                newPart > currentPart -> return true
-                newPart < currentPart -> return false
-            }
-        }
-        return false
     }
 
     private fun promptForUpdate(url: String) {
@@ -374,27 +348,23 @@ class SettingsActivity : AppCompatActivity() {
     private fun showInstallDialog(apkFile: File) {
         runOnUiThread {
             try {
-                // Verifique se o arquivo existe
                 if (!apkFile.exists()) {
                     showError("Arquivo APK não encontrado")
                     return@runOnUiThread
                 }
 
-                // Crie a URI usando FileProvider
                 val apkUri = FileProvider.getUriForFile(
                     this@SettingsActivity,
                     "${BuildConfig.APPLICATION_ID}.provider",
                     apkFile
                 )
 
-                // Crie o intent de instalação
                 val installIntent = Intent(Intent.ACTION_VIEW).apply {
                     setDataAndType(apkUri, "application/vnd.android.package-archive")
                     addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
                     addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
                 }
 
-                // Verifique se há um aplicativo para lidar com o intent
                 if (installIntent.resolveActivity(packageManager) != null) {
                     AlertDialog.Builder(this@SettingsActivity)
                         .setTitle("Download concluído")

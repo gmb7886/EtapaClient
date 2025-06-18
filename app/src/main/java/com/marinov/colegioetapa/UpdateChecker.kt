@@ -1,15 +1,14 @@
 package com.marinov.colegioetapa
 
 import android.content.Context
-import android.os.Build
 import android.util.Log
+import androidx.core.content.edit
 import org.json.JSONObject
 import java.io.BufferedReader
 import java.io.InputStreamReader
 import java.net.HttpURLConnection
 import java.net.URL
 import java.util.stream.Collectors
-import androidx.core.content.edit
 
 object UpdateChecker {
     private const val TAG = "UpdateChecker"
@@ -44,12 +43,15 @@ object UpdateChecker {
                         val prefs = context.getSharedPreferences(PREFS_NAME, Context.MODE_PRIVATE)
                         val lastNotifiedVersion = prefs.getString(KEY_LAST_VERSION, "") ?: ""
 
-                        when {
-                            isVersionGreater(latestVersion, currentVersion) && latestVersion != lastNotifiedVersion -> {
+                        if (isVersionGreater(latestVersion, currentVersion)) {
+                            if (latestVersion != lastNotifiedVersion) {
                                 prefs.edit { putString(KEY_LAST_VERSION, latestVersion) }
                                 listener.onUpdateAvailable(release.getString("html_url"))
+                            } else {
+                                listener.onUpToDate()
                             }
-                            else -> listener.onUpToDate()
+                        } else {
+                            listener.onUpToDate()
                         }
                     }
                     else -> listener.onError("HTTP error: ${conn.responseCode}")
@@ -64,19 +66,21 @@ object UpdateChecker {
     private fun readResponseStream(conn: HttpURLConnection): String {
         return conn.inputStream.use { inputStream ->
             BufferedReader(InputStreamReader(inputStream)).use { reader ->
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.N) {
-                    reader.lines().collect(Collectors.joining("\n"))
-                } else {
-                    TODO("VERSION.SDK_INT < N")
-                }
+                reader.lines().collect(Collectors.joining("\n"))
             }
         }
     }
 
-    // Função para comparar versões semanticamente
-    private fun isVersionGreater(newVersion: String, currentVersion: String): Boolean {
-        val newParts = newVersion.split(".").map { it.toIntOrNull() ?: 0 }
-        val currentParts = currentVersion.split(".").map { it.toIntOrNull() ?: 0 }
+    private fun normalizeVersion(version: String): String {
+        return version.replace(Regex("^[^0-9]+"), "")
+    }
+
+    fun isVersionGreater(newVersion: String, currentVersion: String): Boolean {
+        val normalizedNew = normalizeVersion(newVersion)
+        val normalizedCurrent = normalizeVersion(currentVersion)
+
+        val newParts = normalizedNew.split(".").map { it.toIntOrNull() ?: 0 }
+        val currentParts = normalizedCurrent.split(".").map { it.toIntOrNull() ?: 0 }
 
         for (i in 0 until maxOf(newParts.size, currentParts.size)) {
             val newPart = newParts.getOrElse(i) { 0 }
