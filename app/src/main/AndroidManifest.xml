@@ -89,15 +89,15 @@
                 android:resource="@xml/widget_info"/>
         </receiver>
         <receiver
-            android:name=".ProvasWidgetTablet"
+            android:name=".ProvasWidgetDark"
             android:exported="true"
-            android:label="@string/widget_provas_name_tablet">
+            android:label="@string/widget_provas_name_dark">
             <intent-filter>
                 <action android:name="android.appwidget.action.APPWIDGET_UPDATE"/>
             </intent-filter>
             <meta-data
                 android:name="android.appwidget.provider"
-                android:resource="@xml/widget_info_tablet"/>
+                android:resource="@xml/widget_info_dark"/>
         </receiver>
     </application>
 </manifest>
