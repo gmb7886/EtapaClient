@@ -203,7 +203,13 @@ class ProvasWidget : AppWidgetProvider() {
                     }
 
                     provaView.setInt(R.id.prova_container, "setBackgroundResource", bgRes)
-                    provaView.setTextColor(R.id.txt_prova_codigo, ContextCompat.getColor(context, R.color.white))
+                    if (prova.tipo == "REC") {
+                        R.drawable.bg_prova_recuperacao
+                        provaView.setTextColor(R.id.txt_prova_codigo, ContextCompat.getColor(context, R.color.bootstrap_dark))
+                    } else {
+                        R.drawable.bg_prova_normal
+                        provaView.setTextColor(R.id.txt_prova_codigo, ContextCompat.getColor(context, R.color.white))
+                    }
 
                     // Adicionar ao container
                     cellView.addView(R.id.provas_container, provaView)
