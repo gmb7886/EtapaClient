@@ -29,6 +29,7 @@
     <string name="shortcut_provas_long">Calendário de provas</string>
 
     <string name="widget_provas_name">Calendário de Provas</string>
+    <string name="widget_provas_name_tablet">Calendário de Provas (tablet)</string>
 
     <string name="sem_redacoes_disponiveis">Nenhuma redação encontrada.</string>
 </resources>

@@ -19,7 +19,7 @@ import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
 
-class ProvasWidget : AppWidgetProvider() {
+class ProvasWidgetTablet : AppWidgetProvider() {
 
     companion object {
         const val PREFS_WIDGET = "widget_provas_prefs"
