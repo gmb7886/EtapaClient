@@ -51,7 +51,7 @@ class ProvasWidgetDark : AppWidgetProvider() {
                 appWidgetManager.updateAppWidget(appWidgetId, views)
             } catch (e: Exception) {
                 Log.e(TAG, "Falha ao construir widget", e)
-                val errorViews = RemoteViews(context.packageName, R.layout.widget_error)
+                val errorViews = RemoteViews(context.packageName, R.layout.widget_error_dark)
                 errorViews.setTextViewText(R.id.widget_error_text, "Erro ao carregar")
                 appWidgetManager.updateAppWidget(appWidgetId, errorViews)
             }
@@ -59,7 +59,7 @@ class ProvasWidgetDark : AppWidgetProvider() {
 
         private fun buildRemoteViews(context: Context): RemoteViews {
             return try {
-                val views = RemoteViews(context.packageName, R.layout.widget_calendar_provas)
+                val views = RemoteViews(context.packageName, R.layout.widget_calendar_provas_dark)
                 val calendar = Calendar.getInstance()
                 val mesAno = SimpleDateFormat("MMMM yyyy", Locale("pt", "BR")).format(calendar.time)
                 views.setTextViewText(R.id.txt_mes_ano, mesAno.replaceFirstChar { it.titlecase() })
@@ -96,7 +96,7 @@ class ProvasWidgetDark : AppWidgetProvider() {
                 val diasSemana = listOf("D", "S", "T", "Q", "Q", "S", "S")
                 views.removeAllViews(R.id.header_container)
                 for (dia in diasSemana) {
-                    val headerView = RemoteViews(context.packageName, R.layout.widget_dia_header)
+                    val headerView = RemoteViews(context.packageName, R.layout.widget_dia_header_dark)
                     headerView.setTextViewText(R.id.txt_dia_semana, dia)
                     views.addView(R.id.header_container, headerView)
                 }
@@ -142,7 +142,7 @@ class ProvasWidgetDark : AppWidgetProvider() {
                 views
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao construir RemoteViews", e)
-                RemoteViews(context.packageName, R.layout.widget_error).apply {
+                RemoteViews(context.packageName, R.layout.widget_error_dark).apply {
                     setTextViewText(R.id.widget_error_text, "Erro: ${e.localizedMessage}")
                 }
             }
@@ -155,7 +155,7 @@ class ProvasWidgetDark : AppWidgetProvider() {
             isHoje: Boolean,
             provas: List<ProvaData>
         ): RemoteViews {
-            val cellView = RemoteViews(context.packageName, R.layout.widget_dia_item)
+            val cellView = RemoteViews(context.packageName, R.layout.widget_dia_item_dark)
             cellView.setTextViewText(R.id.txt_dia, dia.toString())
 
             // Remover todas as views antigas do container de provas
@@ -163,13 +163,13 @@ class ProvasWidgetDark : AppWidgetProvider() {
 
             // Aplicar estilo baseado no mês
             if (isMesAtual) {
-                cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.text_primary))
+                cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.white))
                 if (isHoje) {
                     cellView.setInt(R.id.txt_dia, "setBackgroundResource", R.drawable.bg_dia_atual)
                     cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.white))
                 }
             } else {
-                cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.text_secondary))
+                cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.white))
             }
 
             // Processar provas
