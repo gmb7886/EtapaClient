@@ -7,21 +7,9 @@ import com.google.android.material.color.DynamicColors
 class MyApplication : Application() {
     override fun onCreate() {
         super.onCreate()
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S && isDynamicColorsSupported()) {
+        // só aplica em Android 12+; em versões antigas fica no seu tema estático
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
             DynamicColors.applyToActivitiesIfAvailable(this)
         }
-    }
-
-    private fun isDynamicColorsSupported(): Boolean {
-        val excludedManufacturers = setOf(
-            "xiaomi",
-            "huawei",
-            "oppo",
-            "realme",
-            "vivo",
-            "oneplus"
-        )
-
-        return !excludedManufacturers.contains(Build.MANUFACTURER.lowercase())
     }
 }
