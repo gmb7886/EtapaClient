@@ -30,5 +30,8 @@
     <color name="faixaCm">#999900</color>
     <color name="faixaD">#CC5200</color>
     <color name="faixaE">#CC0000</color>
-    <color name="faixaDefault">#888888</color><color name="widget_text_primary">#FFFFFFFF</color>
+    <color name="faixaDefault">#888888</color>
+    <color name="text_primary">#000000</color>
+    <color name="text_secondary">#808080</color>
+    <color name="widget_text_primary">#FFFFFFFF</color>
 </resources>

@@ -25,6 +25,7 @@ class NotasWorker(appContext: Context, workerParams: WorkerParameters) :
         private const val URL_NOTAS = "https://areaexclusiva.colegioetapa.com.br/provas/notas"
         const val PREFS = "notas_prefs"
         const val KEY_HTML = "cache_html"
+        const val EXTRA_DESTINATION = "destination"
     }
 
     data class Nota(
@@ -164,8 +165,10 @@ class NotasWorker(appContext: Context, workerParams: WorkerParameters) :
             }
         }.trim()
 
-        val intent = Intent(applicationContext, Class.forName("com.marinov.colegioetapa.MainActivity")).apply {
-            flags = Intent.FLAG_ACTIVITY_NEW_TASK
+        // Intent para abrir a MainActivity e direcionar para o fragmento de notas
+        val intent = Intent(applicationContext, MainActivity::class.java).apply {
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
+            putExtra(EXTRA_DESTINATION, "notas")  // Destino: NotasFragment
         }
 
         val pendingIntent = PendingIntent.getActivity(

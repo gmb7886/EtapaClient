@@ -6,12 +6,15 @@ import android.appwidget.AppWidgetProvider
 import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
+import android.graphics.Color
 import android.os.Build
 import android.util.Log
 import android.view.View
+import android.widget.LinearLayout
 import android.widget.RemoteViews
 import androidx.core.content.ContextCompat
 import org.json.JSONArray
+import org.json.JSONObject
 import java.text.SimpleDateFormat
 import java.util.Calendar
 import java.util.Locale
@@ -79,38 +82,77 @@ class ProvasWidget : AppWidgetProvider() {
 
                 // Carregar dados
                 val prefs = context.getSharedPreferences(PREFS_WIDGET, Context.MODE_PRIVATE)
-                val provasData = prefs.getString(KEY_PROVAS, null)
-                val provasMap = parseProvasData(provasData)
+                val provasJson = prefs.getString(KEY_PROVAS, null)
+                Log.d(TAG, "Dados salvos: $provasJson")
+
+                val provasMap = mutableMapOf<String, MutableList<ProvaData>>()
+                if (provasJson != null) {
+                    try {
+                        val jsonArray = JSONArray(provasJson)
+                        for (i in 0 until jsonArray.length()) {
+                            val prova = jsonArray.getJSONObject(i)
+                            val data = prova.getString("data")
+                            val codigo = prova.getString("codigo")
+                            val tipo = prova.getString("tipo")
+
+                            val lista = provasMap.getOrPut(data) { mutableListOf() }
+                            lista.add(ProvaData(codigo, tipo))
+                        }
+                    } catch (e: Exception) {
+                        Log.e(TAG, "Erro ao analisar JSON", e)
+                    }
+                }
+                Log.d(TAG, "Provas mapeadas: ${provasMap.size} dias")
+
                 val diaAtual = calendar.get(Calendar.DAY_OF_MONTH)
+                val mesAtual = calendar.get(Calendar.MONTH)  // Janeiro=0
+                val anoAtual = calendar.get(Calendar.YEAR)
 
                 // Construir cabeçalho
                 val diasSemana = listOf("D", "S", "T", "Q", "Q", "S", "S")
-                for ((index, dia) in diasSemana.withIndex()) {
+                views.removeAllViews(R.id.header_container)
+                for (dia in diasSemana) {
                     val headerView = RemoteViews(context.packageName, R.layout.widget_dia_header)
                     headerView.setTextViewText(R.id.txt_dia_semana, dia)
                     views.addView(R.id.header_container, headerView)
                 }
 
-                // Construir calendário
+                // Calcular início e fim do calendário
                 calendar.set(Calendar.DAY_OF_MONTH, 1)
                 val primeiroDia = calendar.get(Calendar.DAY_OF_WEEK)
                 val offset = (primeiroDia - Calendar.SUNDAY + 7) % 7
-                var diaCounter = 1
-                val totalDias = calendar.getActualMaximum(Calendar.DAY_OF_MONTH)
+
+                var diaGlobal = 1
+                val totalCelulas = 42  // 6 semanas * 7 dias
 
                 for (weekId in WEEK_IDS) {
                     views.removeAllViews(weekId)
                     for (i in 0 until 7) {
-                        val cellIndex = diaCounter - offset - 1
-                        val isDiaValido = cellIndex >= 0 && diaCounter <= totalDias + offset
-
-                        val cellView = if (isDiaValido) {
-                            createDayCell(context, cellIndex + 1, diaAtual, provasMap)
-                        } else {
-                            RemoteViews(context.packageName, R.layout.widget_dia_vazio)
+                        val cellIndex = diaGlobal - 1
+                        val diaCal = Calendar.getInstance().apply {
+                            time = calendar.time
+                            add(Calendar.DAY_OF_MONTH, cellIndex - offset)
                         }
+
+                        val dia = diaCal.get(Calendar.DAY_OF_MONTH)
+                        val mes = diaCal.get(Calendar.MONTH)
+                        val ano = diaCal.get(Calendar.YEAR)
+                        val isMesAtual = mes == mesAtual && ano == anoAtual
+                        val isHoje = isMesAtual && dia == diaAtual
+
+                        // Formatar data no padrão "dd/MM/yyyy" para buscar provas
+                        val chaveData = String.format("%02d/%02d/%d", dia, mes + 1, ano)
+                        val provasDia = provasMap[chaveData] ?: emptyList()
+
+                        val cellView = createDayCell(
+                            context,
+                            dia,
+                            isMesAtual,
+                            isHoje,
+                            provasDia
+                        )
                         views.addView(weekId, cellView)
-                        if (isDiaValido) diaCounter++
+                        diaGlobal++
                     }
                 }
                 views
@@ -125,56 +167,58 @@ class ProvasWidget : AppWidgetProvider() {
         private fun createDayCell(
             context: Context,
             dia: Int,
-            diaAtual: Int,
-            provasMap: Map<Int, List<String>>
+            isMesAtual: Boolean,
+            isHoje: Boolean,
+            provas: List<ProvaData>
         ): RemoteViews {
             val cellView = RemoteViews(context.packageName, R.layout.widget_dia_item)
             cellView.setTextViewText(R.id.txt_dia, dia.toString())
 
-            // Destacar dia atual
-            if (dia == diaAtual) {
-                cellView.setInt(R.id.dia_container, "setBackgroundResource", R.drawable.bg_dia_atual)
-                cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, android.R.color.white))
+            // Remover todas as views antigas do container de provas
+            cellView.removeAllViews(R.id.provas_container)
+
+            // Aplicar estilo baseado no mês
+            if (isMesAtual) {
+                cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.text_primary))
+                if (isHoje) {
+                    cellView.setInt(R.id.txt_dia, "setBackgroundResource", R.drawable.bg_dia_atual)
+                    cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.white))
+                }
+            } else {
+                cellView.setTextColor(R.id.txt_dia, ContextCompat.getColor(context, R.color.text_secondary))
             }
 
-            // Adicionar provas
-            provasMap[dia]?.let { codigos ->
-                if (codigos.isNotEmpty()) {
-                    val texto = codigos.take(3).joinToString(" ")
-                    cellView.setTextViewText(R.id.txt_codigos, texto)
-                    cellView.setViewVisibility(R.id.txt_codigos, View.VISIBLE)
+            // Processar provas
+            if (provas.isNotEmpty()) {
+                cellView.setViewVisibility(R.id.provas_container, View.VISIBLE)
 
-                    val bgRes = if (codigos.any { it.contains("REC", ignoreCase = true) }) {
+                // Adicionar cada prova como uma linha separada
+                for (prova in provas) {
+                    val provaView = RemoteViews(context.packageName, R.layout.widget_prova_item)
+
+                    provaView.setTextViewText(R.id.txt_prova_codigo, prova.codigo)
+
+                    // Determinar cor com base no tipo de prova
+                    val bgRes = if (prova.tipo == "REC") {
                         R.drawable.bg_prova_recuperacao
                     } else {
                         R.drawable.bg_prova_normal
                     }
-                    cellView.setInt(R.id.dia_container, "setBackgroundResource", bgRes)
+
+                    provaView.setInt(R.id.prova_container, "setBackgroundResource", bgRes)
+                    provaView.setTextColor(R.id.txt_prova_codigo, ContextCompat.getColor(context, R.color.white))
+
+                    // Adicionar ao container
+                    cellView.addView(R.id.provas_container, provaView)
                 }
+            } else {
+                cellView.setViewVisibility(R.id.provas_container, View.GONE)
             }
+
             return cellView
         }
 
-        private fun parseProvasData(json: String?): Map<Int, List<String>> {
-            val map = mutableMapOf<Int, MutableList<String>>()
-            try {
-                json?.let {
-                    JSONArray(it).let { jsonArray ->
-                        for (i in 0 until jsonArray.length()) {
-                            val prova = jsonArray.getJSONObject(i)
-                            val data = prova.getString("data")
-                            val codigo = prova.getString("codigo")
-                            data.split("/").firstOrNull()?.toIntOrNull()?.let { dia ->
-                                map.getOrPut(dia) { mutableListOf() }.add(codigo)
-                            }
-                        }
-                    }
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Erro ao analisar JSON", e)
-            }
-            return map
-        }
+        private data class ProvaData(val codigo: String, val tipo: String)
     }
 
     override fun onUpdate(

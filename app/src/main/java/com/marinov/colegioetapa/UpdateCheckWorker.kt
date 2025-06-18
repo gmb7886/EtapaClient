@@ -66,7 +66,7 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
 
         val builder = NotificationCompat.Builder(applicationContext, CHANNEL_ID)
             .setSmallIcon(R.drawable.ic_update)
-            .setContentTitle("Atualização do app disponível!")
+            .setContentTitle("Atualização do software disponível!")
             .setContentText("Clique aqui para atualizar")
             .setPriority(NotificationCompat.PRIORITY_HIGH)
             .setContentIntent(pendingIntent)
@@ -79,7 +79,7 @@ class UpdateCheckWorker(context: Context, params: WorkerParameters) : CoroutineW
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
             val channel = NotificationChannel(
                 CHANNEL_ID,
-                "Atualizações",
+                "Atualizações do software",
                 NotificationManager.IMPORTANCE_HIGH
             )
             val manager = applicationContext.getSystemService(NotificationManager::class.java)

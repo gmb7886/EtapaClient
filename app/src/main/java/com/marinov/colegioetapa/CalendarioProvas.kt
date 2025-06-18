@@ -118,27 +118,35 @@ class CalendarioProvas : Fragment() {
     }
 
     private fun salvarDadosParaWidget(provas: List<ProvaItem>) {
-        val calendar = Calendar.getInstance()
-        val mesAtual = calendar.get(Calendar.MONTH) + 1 // Janeiro=0, então +1
-
-        // Filtrar apenas provas do mês atual
-        val provasMesAtual = provas.filter { prova ->
-            val partesData = prova.data.split("/")
-            if (partesData.size >= 2) {
-                partesData[1].toIntOrNull() == mesAtual
-            } else {
-                false
-            }
-        }
-
-        // Converter para JSON
         val jsonArray = JSONArray()
-        provasMesAtual.forEach { prova ->
-            jsonArray.put(JSONObject().apply {
-                put("data", prova.data)
-                put("codigo", prova.codigo)
-                put("tipo", prova.tipo)
-            })
+        val calendar = Calendar.getInstance()
+        val anoAtual = calendar.get(Calendar.YEAR)
+
+        provas.forEach { prova ->
+            try {
+                // Extrair dia e mês da string de data (ex: "2/6 - 13h45m" -> dia=2, mês=6)
+                val dataParte = prova.data.split(" ")[0] // Pega "2/6"
+                val partes = dataParte.split("/")
+
+                if (partes.size >= 2) {
+                    val dia = partes[0].toInt()
+                    val mes = partes[1].toInt()
+
+                    // Criar data completa no formato "dd/MM/yyyy"
+                    val dataCompleta = String.format("%02d/%02d/%d", dia, mes, anoAtual)
+
+                    // Determinar tipo (REC ou PROVA)
+                    val tipo = if (prova.tipo.contains("REC", ignoreCase = true)) "REC" else "PROVA"
+
+                    jsonArray.put(JSONObject().apply {
+                        put("data", dataCompleta)
+                        put("codigo", prova.codigo)
+                        put("tipo", tipo)
+                    })
+                }
+            } catch (e: Exception) {
+                Log.e("CalendarioProvas", "Erro ao processar data: ${prova.data}", e)
+            }
         }
 
         // Salvar nas preferências
