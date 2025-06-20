@@ -19,7 +19,6 @@ listenablefuture = "9999.0-empty-to-avoid-conflict-with-guava"
 loggingInterceptor = "4.9.3"
 material = "1.12.0"
 constraintlayout = "2.2.1"
-navigationCompose = "2.7.6"
 navigationFragment = "2.8.9"
 navigationUi = "2.8.9"
 retrofit = "2.9.0"
@@ -35,17 +34,8 @@ workRuntimeKtx = "2.8.1"
 activity-compose = { module = "androidx.activity:activity-compose", version.ref = "activityCompose" }
 androidx-activity-compose-v182 = { module = "androidx.activity:activity-compose", version.ref = "activityComposeVersion" }
 androidx-compose-material3-material3 = { module = "androidx.compose.material3:material3" }
-androidx-compose-material3-material32 = { module = "androidx.compose.material3:material3" }
-androidx-compose-material3-material33 = { module = "androidx.compose.material3:material3" }
-androidx-compose-ui-ui = { module = "androidx.compose.ui:ui" }
-androidx-compose-ui-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
-androidx-compose-ui-ui-tooling-preview2 = { module = "androidx.compose.ui:ui-tooling-preview" }
 androidx-lifecycle-viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycleViewmodelCompose" }
-androidx-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
-androidx-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
 androidx-material3 = { module = "androidx.compose.material3:material3" }
-androidx-navigation-compose = { module = "androidx.navigation:navigation-compose", version.ref = "navigationCompose" }
-androidx-ui = { module = "androidx.compose.ui:ui" }
 androidx-ui-tooling-preview = { module = "androidx.compose.ui:ui-tooling-preview" }
 compiler = { module = "com.github.bumptech.glide:compiler", version.ref = "compiler" }
 compose-bom = { module = "androidx.compose:compose-bom", version.ref = "composeBom" }
@@ -64,8 +54,6 @@ listenablefuture = { module = "com.google.guava:listenablefuture", version.ref =
 logging-interceptor = { module = "com.squareup.okhttp3:logging-interceptor", version.ref = "loggingInterceptor" }
 material = { group = "com.google.android.material", name = "material", version.ref = "material" }
 constraintlayout = { group = "androidx.constraintlayout", name = "constraintlayout", version.ref = "constraintlayout" }
-material-icons-extended = { module = "androidx.compose.material:material-icons-extended" }
-material-icons-core = { module = "androidx.compose.material:material-icons-core" }
 material3 = { module = "androidx.compose.material3:material3" }
 navigation-fragment = { group = "androidx.navigation", name = "navigation-fragment", version.ref = "navigationFragment" }
 navigation-ui = { group = "androidx.navigation", name = "navigation-ui", version.ref = "navigationUi" }
