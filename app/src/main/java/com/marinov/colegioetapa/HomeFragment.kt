@@ -178,7 +178,7 @@ class HomeFragment : Fragment() {
         val cookies = cookieManager.getCookie(HOME_URL)
 
         return Jsoup.connect(HOME_URL)
-            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
+            .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
             .header("Cookie", cookies ?: "")
             .timeout(10000)
             .get()
