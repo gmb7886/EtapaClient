@@ -37,5 +37,6 @@
     <string name="widget_provas_name_dark">Calendário de Provas (modo escuro)</string>
     <string name="nenhum_relatorio_encontrado">Nenhum dado encontrado.</string>
     <string name="provas_format">Provas: %1$s</string>
+    <string name="nenhuma_prova_encontrada">Nenhuma prova encontrada.</string>
     <string name="sem_redacoes_disponiveis">Nenhuma redação encontrada.</string>
 </resources>

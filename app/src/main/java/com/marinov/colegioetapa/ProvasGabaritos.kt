@@ -7,7 +7,7 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
@@ -22,11 +22,11 @@ import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
 import androidx.core.content.ContextCompat
+import androidx.core.content.edit
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import kotlinx.coroutines.CoroutineScope
@@ -173,6 +173,7 @@ class ProvasGabaritos : Fragment() {
                     if (elementoCriticoPresente) {
                         // Elemento crítico encontrado - exibir estado inicial
                         exibirInstrucao()
+                        habilitarInterface(true)
                     } else {
                         // Elemento crítico não encontrado - exibir tela offline
                         exibirTelaOffline()
@@ -348,9 +349,9 @@ class ProvasGabaritos : Fragment() {
     }
 
     private fun salvarCache(html: String) {
-        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(KEY_CACHE, html)
-            .apply()
+        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
+            putString(KEY_CACHE, html)
+        }
     }
 
     private fun carregarCache() {
@@ -394,7 +395,7 @@ class ProvasGabaritos : Fragment() {
 
     private fun exibirMensagemSemProvas() {
         recyclerProvas.visibility = View.GONE
-        txtSemProvas.text = "Nenhuma prova encontrada."
+        txtSemProvas.setText(R.string.nenhuma_prova_encontrada)
         txtSemProvas.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
         telaOffline.visibility = View.GONE
@@ -402,7 +403,7 @@ class ProvasGabaritos : Fragment() {
 
     private fun exibirInstrucao() {
         recyclerProvas.visibility = View.GONE
-        txtSemProvas.text = "Selecione o conjunto e a matéria."
+        txtSemProvas.setText(R.string.selecione_conjunto_materia)
         txtSemProvas.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
         telaOffline.visibility = View.GONE
@@ -426,8 +427,11 @@ class ProvasGabaritos : Fragment() {
     private fun isOnline(): Boolean {
         return try {
             val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val netInfo: NetworkInfo? = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
+
+            val activeNetwork = cm.activeNetwork ?: return false
+            val networkCapabilities = cm.getNetworkCapabilities(activeNetwork) ?: return false
+            return networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         } catch (_: Exception) {
             false
         }

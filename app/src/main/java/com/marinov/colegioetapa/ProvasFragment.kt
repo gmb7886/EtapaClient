@@ -5,8 +5,6 @@ import android.app.DownloadManager
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.AsyncTask
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
@@ -25,16 +23,19 @@ import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.widget.SearchView
 import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.lifecycleScope
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.Job
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONArray
 import java.io.BufferedReader
 import java.io.InputStream
 import java.io.InputStreamReader
-import java.lang.ref.WeakReference
 import java.net.HttpURLConnection
 import java.net.URL
 
@@ -50,7 +51,7 @@ class ProvasFragment : Fragment() {
     private lateinit var adapter: ProvasAdapter
     private val allItems = mutableListOf<RepoItem>()
     private var currentPath = ""
-    private var fetchTask: FetchFilesTask? = null
+    private var fetchJob: Job? = null
     private lateinit var layoutSemInternet: LinearLayout
     private lateinit var btnTentarNovamente: MaterialButton
 
@@ -112,7 +113,7 @@ class ProvasFragment : Fragment() {
 
     override fun onDestroyView() {
         super.onDestroyView()
-        fetchTask?.cancel(true)
+        fetchJob?.cancel()
     }
 
     @SuppressLint("SetJavaScriptEnabled")
@@ -182,24 +183,81 @@ class ProvasFragment : Fragment() {
         val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
             ?: return false
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = cm.activeNetwork ?: return false
-            val caps = cm.getNetworkCapabilities(network) ?: return false
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-        } else {
-            @Suppress("DEPRECATION")
-            val netInfo = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
-        }
+        val network = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(network) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     private fun startFetch() {
         recyclerProvas.visibility = View.VISIBLE
         searchView.visibility = View.VISIBLE
-        fetchTask?.cancel(true)
-        fetchTask = FetchFilesTask(this).apply {
-            execute(currentPath)
+        fetchJob?.cancel()
+        fetchJob = lifecycleScope.launch {
+            fetchFiles(currentPath)
         }
+    }
+
+    private suspend fun fetchFiles(path: String) {
+        withContext(Dispatchers.Main) {
+            progressBar.visibility = View.VISIBLE
+        }
+
+        val results = withContext(Dispatchers.IO) {
+            fetchFilesFromGitHub(path)
+        }
+
+        withContext(Dispatchers.Main) {
+            progressBar.visibility = View.GONE
+            allItems.clear()
+            allItems.addAll(results)
+            adapter.updateData(results)
+        }
+    }
+
+    private fun fetchFilesFromGitHub(path: String): List<RepoItem> {
+        val list = mutableListOf<RepoItem>()
+        var conn: HttpURLConnection? = null
+
+        try {
+            val api = "https://api.github.com/repos/gmb7886/schooltests/contents" +
+                    if (path.isEmpty()) "" else "/$path"
+            val url = URL(api)
+            conn = url.openConnection() as HttpURLConnection
+            conn.requestMethod = "GET"
+            conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
+            conn.setRequestProperty("User-Agent", "EtapaApp")
+            conn.setRequestProperty("Authorization", "token ${BuildConfig.GITHUB_PAT}")
+
+            if (conn.responseCode != HttpURLConnection.HTTP_OK) return list
+
+            val inputStream: InputStream = conn.inputStream
+            val reader = BufferedReader(InputStreamReader(inputStream))
+            val sb = StringBuilder()
+            var line: String?
+            while (reader.readLine().also { line = it } != null) {
+                sb.append(line)
+            }
+            reader.close()
+
+            val arr = JSONArray(sb.toString())
+            for (i in 0 until arr.length()) {
+                val o = arr.getJSONObject(i)
+                list.add(
+                    RepoItem(
+                        o.getString("name"),
+                        o.getString("type"),
+                        o.getString("path"),
+                        o.optString("download_url", "")
+                    )
+                )
+            }
+        } catch (e: Exception) {
+            Log.e(TAG, "Erro ao buscar arquivos", e)
+        } finally {
+            conn?.disconnect()
+        }
+
+        return list
     }
 
     private fun onItemClick(item: RepoItem) {
@@ -225,13 +283,6 @@ class ProvasFragment : Fragment() {
         val lower = query?.lowercase() ?: ""
         val filtered = allItems.filter { it.name.lowercase().contains(lower) }
         adapter.updateData(filtered)
-    }
-
-    fun onFetchCompleted(results: List<RepoItem>) {
-        progressBar.visibility = View.GONE
-        allItems.clear()
-        allItems.addAll(results)
-        adapter.updateData(results)
     }
 
     data class RepoItem(
@@ -271,67 +322,6 @@ class ProvasFragment : Fragment() {
         class VH(itemView: View) : RecyclerView.ViewHolder(itemView) {
             val icon: ImageView = itemView.findViewById(R.id.item_icon)
             val text: TextView = itemView.findViewById(R.id.item_text)
-        }
-    }
-
-    private class FetchFilesTask(frag: ProvasFragment) : AsyncTask<String, Void, List<RepoItem>>() {
-        private val fragRef = WeakReference(frag)
-        private val githubToken: String = BuildConfig.GITHUB_PAT
-
-        @Deprecated("Deprecated in Java")
-        override fun onPreExecute() {
-            fragRef.get()?.progressBar?.visibility = View.VISIBLE
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun doInBackground(vararg params: String?): List<RepoItem> {
-            val path = params[0] ?: ""
-            val list = mutableListOf<RepoItem>()
-            var conn: HttpURLConnection? = null
-            try {
-                val api = "https://api.github.com/repos/gmb7886/schooltests/contents" +
-                        if (path.isEmpty()) "" else "/$path"
-                val url = URL(api)
-                conn = url.openConnection() as HttpURLConnection
-                conn.requestMethod = "GET"
-                conn.setRequestProperty("Accept", "application/vnd.github.v3+json")
-                conn.setRequestProperty("User-Agent", "EtapaApp")
-                conn.setRequestProperty("Authorization", "token $githubToken")
-
-                if (conn.responseCode != HttpURLConnection.HTTP_OK) return list
-
-                val inputStream: InputStream = conn.inputStream
-                val reader = BufferedReader(InputStreamReader(inputStream))
-                val sb = StringBuilder()
-                var line: String?
-                while (reader.readLine().also { line = it } != null) {
-                    sb.append(line)
-                }
-                reader.close()
-
-                val arr = JSONArray(sb.toString())
-                for (i in 0 until arr.length()) {
-                    val o = arr.getJSONObject(i)
-                    list.add(
-                        RepoItem(
-                            o.getString("name"),
-                            o.getString("type"),
-                            o.getString("path"),
-                            o.optString("download_url", "")
-                        )
-                    )
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Erro ao buscar arquivos", e)
-            } finally {
-                conn?.disconnect()
-            }
-            return list
-        }
-
-        @Deprecated("Deprecated in Java")
-        override fun onPostExecute(result: List<RepoItem>) {
-            fragRef.get()?.onFetchCompleted(result)
         }
     }
 }

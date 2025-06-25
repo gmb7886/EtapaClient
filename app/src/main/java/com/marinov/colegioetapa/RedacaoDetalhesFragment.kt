@@ -3,7 +3,7 @@ package com.marinov.colegioetapa
 import android.content.Context
 import android.graphics.Typeface
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -12,6 +12,7 @@ import android.view.ViewGroup
 import android.webkit.CookieManager
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -207,7 +208,7 @@ class RedacaoDetalhesFragment : Fragment() {
         // Imagem da Redação
         val imagemElement = doc.selectFirst(IMAGEM_REDACAO_SELECTOR)
         val imagemUrl = imagemElement?.attr("src")
-        if (imagemUrl != null && imagemUrl.isNotBlank()) {
+        if (!imagemUrl.isNullOrBlank()) {
             Glide.with(this@RedacaoDetalhesFragment)
                 .load(imagemUrl)
                 .into(imagemRedacao)
@@ -259,9 +260,9 @@ class RedacaoDetalhesFragment : Fragment() {
     }
 
     private fun salvarCache(html: String) {
-        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(KEY_CACHE, html)
-            .apply()
+        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
+            putString(KEY_CACHE, html)
+        }
     }
 
     private fun carregarCache() {
@@ -311,8 +312,10 @@ class RedacaoDetalhesFragment : Fragment() {
     private fun isOnline(): Boolean {
         return try {
             val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val netInfo: NetworkInfo? = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
+            val network = cm.activeNetwork ?: return false
+            val capabilities = cm.getNetworkCapabilities(network) ?: return false
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) &&
+                    capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         } catch (_: Exception) {
             false
         }
@@ -365,13 +368,13 @@ class RedacaoDetalhesFragment : Fragment() {
                 tvNota.text = item.nota
 
                 if (item.isHeader) {
-                    tvCriterio.setTextAppearance(holder.itemView.context, com.google.android.material.R.style.TextAppearance_MaterialComponents_Subtitle1)
+                    tvCriterio.setTextAppearance(com.google.android.material.R.style.TextAppearance_MaterialComponents_Subtitle1)
                     tvCriterio.setTypeface(tvCriterio.typeface, Typeface.BOLD)
-                    tvNota.setTextAppearance(holder.itemView.context, com.google.android.material.R.style.TextAppearance_MaterialComponents_Subtitle1)
+                    tvNota.setTextAppearance(com.google.android.material.R.style.TextAppearance_MaterialComponents_Subtitle1)
                     tvNota.setTypeface(tvNota.typeface, Typeface.BOLD)
                 } else {
-                    tvCriterio.setTextAppearance(holder.itemView.context, com.google.android.material.R.style.TextAppearance_MaterialComponents_Body1)
-                    tvNota.setTextAppearance(holder.itemView.context, com.google.android.material.R.style.TextAppearance_MaterialComponents_Body1)
+                    tvCriterio.setTextAppearance(com.google.android.material.R.style.TextAppearance_MaterialComponents_Body1)
+                    tvNota.setTextAppearance(com.google.android.material.R.style.TextAppearance_MaterialComponents_Body1)
                     tvCriterio.setTypeface(tvCriterio.typeface, Typeface.NORMAL)
                     tvNota.setTypeface(tvNota.typeface, Typeface.NORMAL)
                 }

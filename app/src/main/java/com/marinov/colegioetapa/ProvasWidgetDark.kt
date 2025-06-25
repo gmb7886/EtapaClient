@@ -3,10 +3,8 @@ package com.marinov.colegioetapa
 import android.app.PendingIntent
 import android.appwidget.AppWidgetManager
 import android.appwidget.AppWidgetProvider
-import android.content.ComponentName
 import android.content.Context
 import android.content.Intent
-import android.os.Build
 import android.util.Log
 import android.view.View
 import android.widget.RemoteViews
@@ -19,27 +17,12 @@ import java.util.Locale
 class ProvasWidgetDark : AppWidgetProvider() {
 
     companion object {
-        const val PREFS_WIDGET = "widget_provas_prefs"
-        const val KEY_PROVAS = "provas_data"
-        private const val TAG = "ProvasWidget"
+        private const val PREFS_WIDGET = "widget_provas_prefs"
+        private const val KEY_PROVAS = "provas_data"
+        private const val TAG = "ProvasWidgetDark"
         private val WEEK_IDS = listOf(
             R.id.week1, R.id.week2, R.id.week3, R.id.week4, R.id.week5, R.id.week6
         )
-
-        fun updateWidget(context: Context) {
-            try {
-                val appWidgetManager = AppWidgetManager.getInstance(context)
-                val componentName = ComponentName(context, ProvasWidget::class.java)
-                val ids = appWidgetManager.getAppWidgetIds(componentName)
-
-                for (appWidgetId in ids) {
-                    updateAppWidget(context, appWidgetManager, appWidgetId)
-                }
-            } catch (e: Exception) {
-                Log.e(TAG, "Falha ao atualizar widget", e)
-            }
-        }
-
         private fun updateAppWidget(
             context: Context,
             appWidgetManager: AppWidgetManager,
@@ -51,17 +34,12 @@ class ProvasWidgetDark : AppWidgetProvider() {
                     putExtra("destination", "provas")
                     flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TASK
                 }
-                val flags = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
-                } else {
-                    PendingIntent.FLAG_UPDATE_CURRENT
-                }
 
                 val pendingIntent = PendingIntent.getActivity(
                     context,
                     0,
                     intent,
-                    flags
+                    PendingIntent.FLAG_IMMUTABLE or PendingIntent.FLAG_UPDATE_CURRENT
                 )
                 views.setOnClickPendingIntent(R.id.widget_root, pendingIntent)
                 appWidgetManager.updateAppWidget(appWidgetId, views)
@@ -123,7 +101,6 @@ class ProvasWidgetDark : AppWidgetProvider() {
                 val offset = (primeiroDia - Calendar.SUNDAY + 7) % 7
 
                 var diaGlobal = 1
-                val totalCelulas = 42  // 6 semanas * 7 dias
 
                 for (weekId in WEEK_IDS) {
                     views.removeAllViews(weekId)
@@ -141,7 +118,7 @@ class ProvasWidgetDark : AppWidgetProvider() {
                         val isHoje = isMesAtual && dia == diaAtual
 
                         // Formatar data no padrão "dd/MM/yyyy" para buscar provas
-                        val chaveData = String.format("%02d/%02d/%d", dia, mes + 1, ano)
+                        val chaveData = String.format(Locale.getDefault(), "%02d/%02d/%d", dia, mes + 1, ano)
                         val provasDia = provasMap[chaveData] ?: emptyList()
 
                         val cellView = createDayCell(
@@ -158,7 +135,7 @@ class ProvasWidgetDark : AppWidgetProvider() {
                 views
             } catch (e: Exception) {
                 Log.e(TAG, "Erro ao construir RemoteViews", e)
-                RemoteViews(context.packageName, R.layout.widget_error).apply {
+                RemoteViews(context.packageName, R.layout.widget_error_dark).apply {
                     setTextViewText(R.id.widget_error_text, "Erro: ${e.localizedMessage}")
                 }
             }
@@ -207,10 +184,8 @@ class ProvasWidgetDark : AppWidgetProvider() {
 
                     provaView.setInt(R.id.prova_container, "setBackgroundResource", bgRes)
                     if (prova.tipo == "REC") {
-                        R.drawable.bg_prova_recuperacao
                         provaView.setTextColor(R.id.txt_prova_codigo, ContextCompat.getColor(context, R.color.bootstrap_dark))
                     } else {
-                        R.drawable.bg_prova_normal
                         provaView.setTextColor(R.id.txt_prova_codigo, ContextCompat.getColor(context, R.color.white))
                     }
 

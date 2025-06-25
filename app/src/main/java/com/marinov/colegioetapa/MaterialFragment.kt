@@ -8,7 +8,6 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Build
 import android.os.Bundle
 import android.os.Environment
 import android.util.Log
@@ -26,7 +25,6 @@ import androidx.core.net.toUri
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.button.MaterialButton
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import kotlinx.coroutines.CoroutineScope
@@ -102,7 +100,6 @@ class MaterialFragment : Fragment() {
         btnTentarNovamente.setOnClickListener {
             navigateToHomeFragment()
         }
-
 
         return view
     }
@@ -341,7 +338,7 @@ class MaterialFragment : Fragment() {
             return
         }
 
-        // Para exibir uma mensagem de “preparando download”
+        // Para exibir uma mensagem de "preparando download"
 
         // Captura cookies de sessão do domínio base
         val cookieManager = CookieManager.getInstance()
@@ -401,15 +398,9 @@ class MaterialFragment : Fragment() {
         val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager?
             ?: return false
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = cm.activeNetwork ?: return false
-            val caps = cm.getNetworkCapabilities(network) ?: return false
-            caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-        } else {
-            @Suppress("DEPRECATION")
-            val netInfo = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
-        }
+        val network = cm.activeNetwork ?: return false
+        val caps = cm.getNetworkCapabilities(network) ?: return false
+        return caps.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     private fun showNoInternetUI() {
