@@ -4,7 +4,7 @@ package com.marinov.colegioetapa
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -14,10 +14,10 @@ import android.webkit.CookieManager
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import kotlinx.coroutines.CoroutineScope
@@ -26,7 +26,6 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
-import androidx.core.content.edit
 
 class GraficosFragment : Fragment() {
 
@@ -140,18 +139,18 @@ class GraficosFragment : Fragment() {
             return
         }
 
-        fetchGraficos(URL_BASE)
+        fetchGraficos()
     }
 
-    private fun fetchGraficos(url: String) {
+    private fun fetchGraficos() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 exibirCarregando()
 
                 val doc = withContext(Dispatchers.IO) {
                     try {
-                        val cookieHeader = CookieManager.getInstance().getCookie(url)
-                        Jsoup.connect(url)
+                        val cookieHeader = CookieManager.getInstance().getCookie(URL_BASE)
+                        Jsoup.connect(URL_BASE)
                             .header("Cookie", cookieHeader)
                             .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
                             .timeout(15000)
@@ -254,7 +253,7 @@ class GraficosFragment : Fragment() {
             if (graficoItem.link.isNotBlank()) {
                 abrirWebViewFragment(graficoItem.link)
             } else {
-                Toast.makeText(requireContext(), "Link não disponível", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), R.string.link_nao_disponivel, Toast.LENGTH_SHORT).show()
             }
         }
         recyclerGraficos.adapter = adapter
@@ -298,10 +297,9 @@ class GraficosFragment : Fragment() {
         progressBar.visibility = View.GONE
     }
 
-    @SuppressLint("SetTextI18n")
     private fun exibirMensagemSemGraficos() {
         recyclerGraficos.visibility = View.GONE
-        txtSemGraficos.text = "Nenhum relatório encontrado."
+        txtSemGraficos.setText(R.string.nenhum_relatorio_encontrado)
         txtSemGraficos.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
         telaOffline.visibility = View.GONE
@@ -316,9 +314,13 @@ class GraficosFragment : Fragment() {
 
     private fun isOnline(): Boolean {
         return try {
-            val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val netInfo: NetworkInfo? = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
+            val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
         } catch (_: Exception) {
             false
         }
@@ -347,11 +349,10 @@ class GraficosFragment : Fragment() {
             return ViewHolder(view)
         }
 
-        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
             holder.vestibular.text = item.vestibular
-            holder.numProvas.text = "Provas: ${item.numProvas}"
+            holder.numProvas.text = holder.itemView.context.getString(R.string.provas_format, item.numProvas)
 
             holder.card.setOnClickListener {
                 onClick(item)

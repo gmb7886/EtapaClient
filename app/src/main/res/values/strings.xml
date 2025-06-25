@@ -29,9 +29,13 @@
     <string name="shortcut_horarios_long">Horários de aula</string>
     <string name="shortcut_provas_short">Calendário de provas</string>
     <string name="shortcut_provas_long">Calendário de provas</string>
-
+    <string name="nenhuma_redacao_encontrada">Nenhuma redação encontrada.</string>
+    <string name="correcao_pendente">A correção está pendente.</string>
+    <string name="link_nao_disponivel">Link não disponível</string>
+    <string name="data_envio_format">Data de envio: %1$s</string>
     <string name="widget_provas_name">Calendário de Provas</string>
     <string name="widget_provas_name_dark">Calendário de Provas (modo escuro)</string>
-
+    <string name="nenhum_relatorio_encontrado">Nenhum dado encontrado.</string>
+    <string name="provas_format">Provas: %1$s</string>
     <string name="sem_redacoes_disponiveis">Nenhuma redação encontrada.</string>
 </resources>

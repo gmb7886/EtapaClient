@@ -37,7 +37,7 @@ import android.webkit.WebViewClient
 import android.widget.LinearLayout
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
-import androidx.annotation.RequiresPermission
+import androidx.core.app.ActivityCompat
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -57,7 +57,6 @@ import java.util.concurrent.Executors
 
 class WebViewFragment : Fragment() {
     private lateinit var webView: WebView
-    private lateinit var layoutError: LinearLayout
     private lateinit var layoutSemInternet: LinearLayout
     private lateinit var btnTentarNovamente: MaterialButton
     private lateinit var sharedPrefs: SharedPreferences
@@ -84,14 +83,13 @@ class WebViewFragment : Fragment() {
         createNotificationChannel()
     }
 
-    @SuppressLint("SetJavaScriptEnabled", "MissingPermission")
+    @SuppressLint("SetJavaScriptEnabled")
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
         savedInstanceState: Bundle?
     ): View? {
         val view = inflater.inflate(R.layout.fragment_webview, container, false)
-        layoutError = view.findViewById(R.id.layout_sem_internet)
         webView = view.findViewById(R.id.webview)
         layoutSemInternet = view.findViewById(R.id.layout_sem_internet)
         btnTentarNovamente = view.findViewById(R.id.btn_tentar_novamente)
@@ -117,8 +115,10 @@ class WebViewFragment : Fragment() {
             putString("user", user)
             putString("password", pass)
         }
+
         @JavascriptInterface
         fun getSavedUser(): String = prefs.getString("user", "") ?: ""
+
         @JavascriptInterface
         fun getSavedPassword(): String = prefs.getString("password", "") ?: ""
     }
@@ -135,7 +135,6 @@ class WebViewFragment : Fragment() {
         }
     }
 
-    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     @SuppressLint("SetJavaScriptEnabled")
     private fun initializeWebView() {
         CookieManager.getInstance().apply {
@@ -158,18 +157,10 @@ class WebViewFragment : Fragment() {
             displayZoomControls = false
             userAgentString = "\"Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15"
             mixedContentMode = WebSettings.MIXED_CONTENT_ALWAYS_ALLOW
-            // Forçar tema escuro
-            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
-                WebSettingsCompat.setForceDark(
-                    this,
-                    if (isSystemDarkMode()) WebSettingsCompat.FORCE_DARK_ON else WebSettingsCompat.FORCE_DARK_OFF
-                )
-            }
-            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK_STRATEGY) && isSystemDarkMode()) {
-                WebSettingsCompat.setForceDarkStrategy(
-                    this,
-                    WebSettingsCompat.DARK_STRATEGY_WEB_THEME_DARKENING_ONLY
-                )
+
+            // Configurar tema escuro usando método moderno
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                WebSettingsCompat.setAlgorithmicDarkeningAllowed(this, isSystemDarkMode())
             }
         }
         webView.addJavascriptInterface(JsInterface(sharedPrefs), "AndroidAutofill")
@@ -192,11 +183,9 @@ class WebViewFragment : Fragment() {
                 }
                 if (isSystemDarkMode()) injectCssDarkMode(view)
                 showWebViewWithAnimation(view)
-                layoutError.visibility = View.GONE
                 layoutSemInternet.visibility = View.GONE
             }
 
-            @Suppress("DEPRECATION")
             override fun onReceivedError(
                 view: WebView,
                 request: WebResourceRequest,
@@ -312,17 +301,11 @@ class WebViewFragment : Fragment() {
 
     private fun isOnline(): Boolean {
         val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager? ?: return false
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            cm.activeNetwork?.let { cm.getNetworkCapabilities(it) }?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
-        } else {
-            @Suppress("DEPRECATION")
-            cm.activeNetworkInfo?.isConnected == true
-        }
+        return cm.activeNetwork?.let { cm.getNetworkCapabilities(it) }?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
     }
 
     private fun showNoInternetUI() {
         webView.visibility = View.GONE
-        layoutError.visibility = View.GONE
         layoutSemInternet.visibility = View.VISIBLE
         btnTentarNovamente.setOnClickListener {
             if (isOnline()) {
@@ -339,12 +322,11 @@ class WebViewFragment : Fragment() {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && !prefs.getBoolean(KEY_ASKED_STORAGE, false)) {
             prefs.edit { putBoolean(KEY_ASKED_STORAGE, true) }
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) {
-                requestPermissions(arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_STORAGE_PERMISSION)
+                ActivityCompat.requestPermissions(requireActivity(), arrayOf(Manifest.permission.WRITE_EXTERNAL_STORAGE), REQUEST_STORAGE_PERMISSION)
             }
         }
     }
 
-    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun configureDownloadListener() {
         webView.setDownloadListener { url, ua, cd, mime, _ ->
             if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.Q && ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.WRITE_EXTERNAL_STORAGE) != PackageManager.PERMISSION_GRANTED) return@setDownloadListener
@@ -355,7 +337,6 @@ class WebViewFragment : Fragment() {
         }
     }
 
-    @RequiresPermission(Manifest.permission.POST_NOTIFICATIONS)
     private fun downloadManually(
         url: String,
         fileName: String,
@@ -370,7 +351,10 @@ class WebViewFragment : Fragment() {
             .setContentText("Baixando $fileName")
             .setPriority(NotificationCompat.PRIORITY_LOW)
             .setOngoing(true)
-        NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build())
+
+        if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+            NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build())
+        }
 
         Executors.newSingleThreadExecutor().execute {
             var conn: HttpURLConnection? = null
@@ -420,12 +404,21 @@ class WebViewFragment : Fragment() {
                 }
                 val pi = PendingIntent.getActivity(requireContext(), 0, openIntent, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
                 notif.setContentText("Concluído: $fileName").setSmallIcon(android.R.drawable.stat_sys_download_done).setContentIntent(pi).setOngoing(false).setAutoCancel(true)
-                NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build())
-                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && downloadedPath != null) MediaScannerConnection.scanFile(requireContext(), arrayOf(downloadedPath), arrayOf(mimeType), null)
+
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                    NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build())
+                }
+
+                if (Build.VERSION.SDK_INT < Build.VERSION_CODES.Q && downloadedPath != null) {
+                    MediaScannerConnection.scanFile(requireContext(), arrayOf(downloadedPath), arrayOf(mimeType), null)
+                }
             } catch (e: Exception) {
                 Log.e("DownloadManual", "erro", e)
                 notif.setContentText("Falha: $fileName").setSmallIcon(android.R.drawable.stat_notify_error).setOngoing(false).setAutoCancel(true)
-                NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build())
+
+                if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED) {
+                    NotificationManagerCompat.from(requireContext()).notify(NOTIFICATION_ID, notif.build())
+                }
             } finally {
                 conn?.disconnect()
                 try { input?.close() } catch (_: IOException) {}
@@ -437,10 +430,8 @@ class WebViewFragment : Fragment() {
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
         if (::webView.isInitialized) {
-            if (WebViewFeature.isFeatureSupported(WebViewFeature.FORCE_DARK)) {
-                WebSettingsCompat.setForceDark(webView.settings,
-                    if (isSystemDarkMode()) WebSettingsCompat.FORCE_DARK_ON else WebSettingsCompat.FORCE_DARK_OFF
-                )
+            if (WebViewFeature.isFeatureSupported(WebViewFeature.ALGORITHMIC_DARKENING)) {
+                WebSettingsCompat.setAlgorithmicDarkeningAllowed(webView.settings, isSystemDarkMode())
             }
             webView.reload()
         }

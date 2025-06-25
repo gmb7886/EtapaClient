@@ -3,7 +3,7 @@ package com.marinov.colegioetapa
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -13,10 +13,10 @@ import android.webkit.CookieManager
 import android.widget.TextView
 import android.widget.Toast
 import androidx.activity.OnBackPressedCallback
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
-import com.google.android.material.bottomnavigation.BottomNavigationView
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.CircularProgressIndicator
 import kotlinx.coroutines.CoroutineScope
@@ -143,18 +143,18 @@ class EscreveVerFragment : Fragment() {
             return
         }
 
-        fetchRedacoes(URL_BASE)
+        fetchRedacoes()
     }
 
-    private fun fetchRedacoes(url: String) {
+    private fun fetchRedacoes() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 exibirCarregando()
 
                 val doc = withContext(Dispatchers.IO) {
                     try {
-                        val cookieHeader = CookieManager.getInstance().getCookie(url)
-                        Jsoup.connect(url)
+                        val cookieHeader = CookieManager.getInstance().getCookie(URL_BASE)
+                        Jsoup.connect(URL_BASE)
                             .header("Cookie", cookieHeader)
                             .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
                             .timeout(15000)
@@ -245,9 +245,9 @@ class EscreveVerFragment : Fragment() {
     }
 
     private fun salvarCache(html: String) {
-        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(KEY_CACHE, html)
-            .apply()
+        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
+            putString(KEY_CACHE, html)
+        }
     }
 
     private fun carregarCache() {
@@ -269,7 +269,7 @@ class EscreveVerFragment : Fragment() {
         adapter = RedacoesAdapter(emptyList()) { redacaoItem ->
             // Verificar se a redação está pendente
             if (redacaoItem.status.contains("Pendente", ignoreCase = true)) {
-                Toast.makeText(requireContext(), "A correção está pendente.", Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), R.string.correcao_pendente, Toast.LENGTH_SHORT).show()
             } else {
                 if (redacaoItem.link.isNotBlank()) {
                     // Cria o fragment e injeta a URL como argumento
@@ -284,7 +284,7 @@ class EscreveVerFragment : Fragment() {
                         .addToBackStack(null)
                         .commit()
                 } else {
-                    Toast.makeText(requireContext(), "Link não disponível", Toast.LENGTH_SHORT).show()
+                    Toast.makeText(requireContext(), R.string.link_nao_disponivel, Toast.LENGTH_SHORT).show()
                 }
             }
         }
@@ -317,7 +317,7 @@ class EscreveVerFragment : Fragment() {
 
     private fun exibirMensagemSemRedacoes() {
         recyclerRedacoes.visibility = View.GONE
-        txtSemRedacoes.text = "Nenhuma redação encontrada."
+        txtSemRedacoes.setText(R.string.nenhuma_redacao_encontrada)
         txtSemRedacoes.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
         telaOffline.visibility = View.GONE
@@ -332,9 +332,13 @@ class EscreveVerFragment : Fragment() {
 
     private fun isOnline(): Boolean {
         return try {
-            val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val netInfo: NetworkInfo? = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
+            val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
         } catch (_: Exception) {
             false
         }
@@ -367,7 +371,7 @@ class EscreveVerFragment : Fragment() {
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
             holder.tema.text = item.tema
-            holder.dataEnvio.text = "Data de envio: ${item.dataEnvio}"
+            holder.dataEnvio.text = getString(R.string.data_envio_format, item.dataEnvio)
             holder.status.text = item.status
 
             holder.card.setOnClickListener {
