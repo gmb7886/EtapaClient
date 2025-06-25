@@ -38,12 +38,6 @@ class MainActivity : AppCompatActivity() {
     companion object {
         private const val REQUEST_NOTIFICATION_PERMISSION = 100
         private const val TAG = "MainActivity"
-        private val mainMenuIds = setOf(
-            R.id.navigation_home,
-            R.id.option_calendario_provas,
-            R.id.navigation_notas,
-            R.id.option_horarios_aula
-        )
     }
 
     private var currentFragment: Fragment? = null
@@ -88,12 +82,7 @@ class MainActivity : AppCompatActivity() {
                 if (isLayoutReady) return
 
                 // Remover listener após primeira execução
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.JELLY_BEAN) {
-                    rootView.viewTreeObserver.removeOnGlobalLayoutListener(this)
-                } else {
-                    @Suppress("DEPRECATION")
-                    rootView.viewTreeObserver.removeGlobalOnLayoutListener(this)
-                }
+                rootView.viewTreeObserver.removeOnGlobalLayoutListener(this)
                 isLayoutReady = true
 
                 // Configurar navegação após o layout estar pronto
@@ -254,6 +243,7 @@ class MainActivity : AppCompatActivity() {
         )
     }
 
+    @SuppressLint("ObsoleteSdkInt")
     private fun configureSystemBarsForLegacyDevices() {
         if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.P) {
             val isDarkMode = when (AppCompatDelegate.getDefaultNightMode()) {
@@ -267,19 +257,26 @@ class MainActivity : AppCompatActivity() {
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
                 window.apply {
+                    @Suppress("DEPRECATION")
                     clearFlags(WindowManager.LayoutParams.FLAG_TRANSLUCENT_STATUS)
                     addFlags(WindowManager.LayoutParams.FLAG_DRAWS_SYSTEM_BAR_BACKGROUNDS)
 
                     if (Build.VERSION.SDK_INT <= Build.VERSION_CODES.N_MR1) {
+                        @Suppress("DEPRECATION")
                         statusBarColor = Color.BLACK
+                        @Suppress("DEPRECATION")
                         navigationBarColor = Color.BLACK
 
                         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                            @Suppress("DEPRECATION")
                             var flags = decorView.systemUiVisibility
+                            @Suppress("DEPRECATION")
                             flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
+                            @Suppress("DEPRECATION")
                             decorView.systemUiVisibility = flags
                         }
                     } else {
+                        @Suppress("DEPRECATION")
                         navigationBarColor = if (isDarkMode) {
                             ContextCompat.getColor(this@MainActivity, R.color.nav_bar_dark)
                         } else {
@@ -290,20 +287,27 @@ class MainActivity : AppCompatActivity() {
             }
 
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                @Suppress("DEPRECATION")
                 var flags = window.decorView.systemUiVisibility
 
                 if (isDarkMode) {
+                    @Suppress("DEPRECATION")
                     flags = flags and View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR.inv()
                 } else if (Build.VERSION.SDK_INT > Build.VERSION_CODES.N_MR1) {
+                    @Suppress("DEPRECATION")
                     flags = flags or View.SYSTEM_UI_FLAG_LIGHT_STATUS_BAR
                 }
 
+                @Suppress("DEPRECATION")
                 window.decorView.systemUiVisibility = flags
             }
 
             if (!isDarkMode && Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                @Suppress("DEPRECATION")
                 var flags = window.decorView.systemUiVisibility
+                @Suppress("DEPRECATION")
                 flags = flags or View.SYSTEM_UI_FLAG_LIGHT_NAVIGATION_BAR
+                @Suppress("DEPRECATION")
                 window.decorView.systemUiVisibility = flags
             }
         }
@@ -437,17 +441,6 @@ class MainActivity : AppCompatActivity() {
             }
             else -> super.onOptionsItemSelected(item)
         }
-    }
-
-    fun abrirWebView(url: String) {
-        val fragment = WebViewFragment().apply {
-            arguments = WebViewFragment.createArgs(url)
-        }
-        supportFragmentManager.beginTransaction()
-            .setCustomAnimations(android.R.anim.fade_in, android.R.anim.fade_out)
-            .replace(R.id.nav_host_fragment, fragment)
-            .addToBackStack(null)
-            .commit()
     }
 
     fun abrirDetalhesProva(url: String) {
