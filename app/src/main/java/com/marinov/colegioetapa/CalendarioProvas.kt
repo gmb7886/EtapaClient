@@ -4,7 +4,9 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.SharedPreferences
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.os.Build
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -36,6 +38,7 @@ import org.json.JSONObject
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
 import java.util.Calendar
+import java.util.Locale
 
 class CalendarioProvas : Fragment() {
 
@@ -132,8 +135,8 @@ class CalendarioProvas : Fragment() {
                     val dia = partes[0].toInt()
                     val mes = partes[1].toInt()
 
-                    // Criar data completa no formato "dd/MM/yyyy"
-                    val dataCompleta = String.format("%02d/%02d/%d", dia, mes, anoAtual)
+                    // Criar data completa no formato "dd/MM/yyyy" com Locale explícito
+                    val dataCompleta = String.format(Locale.getDefault(), "%02d/%02d/%d", dia, mes, anoAtual)
 
                     // Determinar tipo (REC ou PROVA)
                     val tipo = if (prova.tipo.contains("REC", ignoreCase = true)) "REC" else "PROVA"
@@ -320,9 +323,19 @@ class CalendarioProvas : Fragment() {
 
     private fun isOnline(): Boolean {
         return try {
-            val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val netInfo: NetworkInfo? = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
+            val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+                val network: Network? = connectivityManager.activeNetwork
+                val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+                return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
+                        networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
+            } else {
+                @Suppress("DEPRECATION")
+                val netInfo = connectivityManager.activeNetworkInfo
+                @Suppress("DEPRECATION")
+                return netInfo != null && netInfo.isConnected
+            }
         } catch (_: Exception) {
             false
         }

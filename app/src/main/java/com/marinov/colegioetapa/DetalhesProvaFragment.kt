@@ -3,7 +3,8 @@ package com.marinov.colegioetapa
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.Network
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -14,7 +15,6 @@ import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
-import androidx.core.content.ContextCompat
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -30,7 +30,6 @@ class DetalhesProvaFragment : Fragment() {
     companion object {
         const val ARG_URL = "url"
         const val PREFS = "detalhes_prova_prefs"
-        const val KEY_CACHE = "cache_html_detalhes_prova"
         const val ELEMENTO_CRITICO_SELECTOR = "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > div.card.bg-transparent.border-0"
         fun newInstance(url: String) = DetalhesProvaFragment().apply {
             arguments = Bundle().apply {
@@ -173,7 +172,7 @@ class DetalhesProvaFragment : Fragment() {
 
                     txtCodigo.text = codigo
                     txtTipo.text = tipo
-                    txtConjunto.text = "$conjunto° conjunto"
+                    txtConjunto.text = getString(R.string.conjunto_format, conjunto)
                     txtNota.text = nota
                 }
             }
@@ -240,9 +239,12 @@ class DetalhesProvaFragment : Fragment() {
 
     private fun isOnline(): Boolean {
         return try {
-            val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val netInfo: NetworkInfo? = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
+            val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+
+            val network: Network? = connectivityManager.activeNetwork
+            val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
+            return networkCapabilities?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true &&
+                    networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_VALIDATED)
         } catch (_: Exception) {
             false
         }
@@ -272,12 +274,11 @@ class DetalhesProvaFragment : Fragment() {
             return ViewHolder(view)
         }
 
-        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
             holder.txtTopico.text = item.topico.replace(", ", "\n")
             holder.txtSubTopico.text = item.subtopico.replace(", ", "\n")
-            holder.txtNumero.text = "Questão ${item.numero}"
+            holder.txtNumero.text = getString(R.string.questao_format, item.numero)
             holder.txtAssunto.text = item.assunto
             holder.txtTopico.text = item.topico
             holder.txtSubTopico.text = item.subtopico
@@ -285,7 +286,7 @@ class DetalhesProvaFragment : Fragment() {
 
             // Configurar as estrelas
             holder.containerEstrelas.removeAllViews()
-            val dificuldade = item.dificuldade.lowercase() // Corrigido para usar lowercase()
+            val dificuldade = item.dificuldade.lowercase()
             val estrelas = when {
                 dificuldade.contains("muito difícil") -> listOf(R.drawable.ic_star_half, R.drawable.ic_star_empty, R.drawable.ic_star_empty, R.drawable.ic_star_empty)
                 dificuldade.contains("difícil") -> listOf(R.drawable.ic_star_full, R.drawable.ic_star_half, R.drawable.ic_star_empty, R.drawable.ic_star_empty)

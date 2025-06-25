@@ -3,7 +3,7 @@ package com.marinov.colegioetapa
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -138,18 +138,18 @@ class BoletimSimuladosFragment : Fragment() {
             return
         }
 
-        fetchBoletins(URL_BASE)
+        fetchBoletins()
     }
 
-    private fun fetchBoletins(url: String) {
+    private fun fetchBoletins() {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 exibirCarregando()
 
                 val doc = withContext(Dispatchers.IO) {
                     try {
-                        val cookieHeader = CookieManager.getInstance().getCookie(url)
-                        Jsoup.connect(url)
+                        val cookieHeader = CookieManager.getInstance().getCookie(URL_BASE)
+                        Jsoup.connect(URL_BASE)
                             .header("Cookie", cookieHeader)
                             .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
                             .timeout(15000)
@@ -312,9 +312,10 @@ class BoletimSimuladosFragment : Fragment() {
 
     private fun isOnline(): Boolean {
         return try {
-            val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val netInfo: NetworkInfo? = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
+            val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val network = connectivityManager.activeNetwork ?: return false
+            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
         } catch (_: Exception) {
             false
         }

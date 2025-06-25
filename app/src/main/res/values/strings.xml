@@ -17,10 +17,12 @@
     <string name="sem_dados">Não foi possível carregar os dados.</string>
     <string name="prova">Prova</string>
     <string name="gabarito">Gabarito</string>
-    <!-- Adicione estas strings -->
+    <string name="nenhum_cadastro_prova_encontrado">Nenhum cadastro de prova encontrado.</string>
+    <string name="nota_placeholder">Nota: %1$s</string>
     <string name="sem_conexao_mensagem">Você está offline. Conecte-se à internet para acessar as provas.</string>
     <string name="tentar_novamente">Tentar novamente</string>
-
+    <string name="questao_format">Questão %s</string>
+    <string name="conjunto_format">%s° conjunto</string>
     <string name="shortcut_notas_short">Notas</string>
     <string name="shortcut_notas_long">Notas</string>
     <string name="shortcut_horarios_short">Horários de aula</string>

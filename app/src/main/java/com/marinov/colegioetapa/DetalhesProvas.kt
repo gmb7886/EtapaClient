@@ -3,7 +3,7 @@ package com.marinov.colegioetapa
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkInfo
+import android.net.NetworkCapabilities
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -15,6 +15,7 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -314,10 +315,9 @@ class DetalhesProvas : Fragment() {
             val codigo = cells[0].text()
 
             for ((tipoProva, colunaInicial) in tiposProva) {
-                val colunaNota = colunaInicial
                 val colunaDetalhe = colunaInicial + 1
 
-                val nota = cells[colunaNota].text()
+                val nota = cells[colunaInicial].text()
                 val detalhe = cells[colunaDetalhe]
 
                 if (nota != "-") {
@@ -340,9 +340,9 @@ class DetalhesProvas : Fragment() {
     }
 
     private fun salvarCache(html: String) {
-        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
-            .putString(KEY_CACHE, html)
-            .apply()
+        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
+            putString(KEY_CACHE, html)
+        }
     }
 
     private fun carregarCache() {
@@ -381,12 +381,12 @@ class DetalhesProvas : Fragment() {
         txtSemProvas.visibility = View.GONE
         txtSemDados.visibility = View.GONE
         progressBar.visibility = View.GONE
-        habilitarInterface(false)
+        habilitarInterface()
     }
 
     private fun exibirMensagemSemProvas() {
         recyclerDetalhes.visibility = View.GONE
-        txtSemProvas.text = "Nenhum cadastro de prova encontrado."
+        txtSemProvas.setText(R.string.nenhum_cadastro_prova_encontrado)
         txtSemProvas.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
         telaOffline.visibility = View.GONE
@@ -394,7 +394,7 @@ class DetalhesProvas : Fragment() {
 
     private fun exibirInstrucao() {
         recyclerDetalhes.visibility = View.GONE
-        txtSemProvas.text = "Selecione o conjunto e a matéria."
+        txtSemProvas.setText(R.string.selecione_conjunto_materia)
         txtSemProvas.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
         telaOffline.visibility = View.GONE
@@ -408,7 +408,8 @@ class DetalhesProvas : Fragment() {
         telaOffline.visibility = View.GONE
     }
 
-    private fun habilitarInterface(habilitar: Boolean) {
+    private fun habilitarInterface() {
+        val habilitar = elementoCriticoPresente && isOnline()
         contentLayout.alpha = if (habilitar) 1f else 0.3f
         spinnerConjunto.isEnabled = habilitar
         spinnerMateria.isEnabled = habilitar
@@ -418,8 +419,11 @@ class DetalhesProvas : Fragment() {
     private fun isOnline(): Boolean {
         return try {
             val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val netInfo: NetworkInfo? = cm.activeNetworkInfo
-            netInfo != null && netInfo.isConnected
+            val network = cm.activeNetwork ?: return false
+            val capabilities = cm.getNetworkCapabilities(network) ?: return false
+            return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
+                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
         } catch (_: Exception) {
             false
         }
@@ -445,7 +449,7 @@ class DetalhesProvas : Fragment() {
             val item = items[position]
             holder.txtCodigo.text = item.codigo
             holder.txtTipo.text = item.tipo
-            holder.txtNota.text = "Nota: ${item.nota}"
+            holder.txtNota.text = requireContext().getString(R.string.nota_placeholder, item.nota)
             holder.btnDetalhes.setOnClickListener {
                 (activity as? MainActivity)?.abrirDetalhesProva(item.link)
             }

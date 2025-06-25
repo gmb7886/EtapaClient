@@ -4,7 +4,6 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
 import android.net.NetworkCapabilities
-import android.os.Build
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -20,6 +19,7 @@ import android.widget.FrameLayout
 import android.widget.LinearLayout
 import androidx.activity.OnBackPressedCallback
 import androidx.appcompat.app.AlertDialog
+import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import com.google.android.material.button.MaterialButton
 
@@ -60,9 +60,9 @@ class EADFragment : Fragment() {
         webViewContainer = view.findViewById(R.id.webViewContainer)
 
         btnTentarNovamente.setOnClickListener {
-                navigateToHomeFragment()
-            }
+            navigateToHomeFragment()
         }
+    }
 
     private fun setupBackPressHandler() {
         val callback = object : OnBackPressedCallback(true) {
@@ -155,7 +155,9 @@ class EADFragment : Fragment() {
                 .setMessage("Essa função é instável e pode não funcionar em todos os dispositivos! Essa página só exibe uma página com o compartilhamento de arquivos dos EADs antigos, caso tenha problemas em acessar mande um email para: gmb7886@outlook.com.br. Recomendado uso em tablets para melhor visibilidade.")
                 .setPositiveButton("Entendi") { dialog, _ -> dialog.dismiss() }
                 .setNegativeButton("Não mostrar novamente") { dialog, _ ->
-                    prefs.edit().putBoolean(KEY_SHOW_WARNING, false).apply()
+                    prefs.edit {
+                        putBoolean(KEY_SHOW_WARNING, false)
+                    }
                     dialog.dismiss()
                 }
                 .setCancelable(false)
@@ -177,15 +179,9 @@ class EADFragment : Fragment() {
         val context = context ?: return false
         val cm = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
 
-        return if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
-            val network = cm.activeNetwork ?: return false
-            val capabilities = cm.getNetworkCapabilities(network) ?: return false
-            capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
-        } else {
-            @Suppress("DEPRECATION")
-            val netInfo = cm.activeNetworkInfo
-            netInfo?.isConnected == true
-        }
+        val network = cm.activeNetwork ?: return false
+        val capabilities = cm.getNetworkCapabilities(network) ?: return false
+        return capabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
     }
 
     private fun navigateToHomeFragment() {
