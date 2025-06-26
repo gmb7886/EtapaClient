@@ -2,124 +2,139 @@
 <androidx.coordinatorlayout.widget.CoordinatorLayout
     xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto"
-    android:id="@+id/container"
+    xmlns:tools="http://schemas.android.com/tools"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fitsSystemWindows="true"
     android:background="@color/fundocartao"
-    android:paddingBottom="?attr/actionBarSize"
-    >
+    android:fitsSystemWindows="true">
 
-    <!-- Conteúdo principal -->
-    <LinearLayout
+    <!-- Container de Carregamento -->
+    <FrameLayout
+        android:id="@+id/loadingContainer"
         android:layout_width="match_parent"
         android:layout_height="match_parent"
-        android:orientation="vertical">
+        android:visibility="visible">
 
-        <!-- Barra Offline (mantida para consistência, mas inicialmente oculta) -->
         <LinearLayout
-            android:id="@+id/barOffline"
-            android:layout_width="match_parent"
+            android:layout_width="wrap_content"
             android:layout_height="wrap_content"
-            android:background="?attr/colorErrorContainer"
-            android:orientation="horizontal"
-            android:padding="8dp"
-            android:visibility="gone"
-            android:gravity="center_vertical">
+            android:orientation="vertical"
+            android:gravity="center_horizontal"
+            android:layout_gravity="center"
+            android:paddingBottom="8dp"
+            android:paddingTop="0dp"
+            android:paddingLeft="0dp"
+            android:paddingRight="0dp">
 
-            <ImageView
-                android:layout_width="24dp"
-                android:layout_height="24dp"
-                android:src="@drawable/ic_no_connection"
-                app:tint="?attr/colorOnErrorContainer" />
+            <com.google.android.material.progressindicator.CircularProgressIndicator
+                android:layout_width="48dp"
+                android:layout_height="48dp"
+                app:indicatorColor="?attr/colorPrimary"
+                app:trackColor="?attr/colorSurfaceVariant" />
 
             <TextView
+                android:id="@+id/txtStuckHint"
                 android:layout_width="wrap_content"
                 android:layout_height="wrap_content"
-                android:layout_marginStart="8dp"
-                android:text="Sem conexão"
-                android:textAppearance="?attr/textAppearanceBody2"
-                android:textColor="?attr/colorOnErrorContainer"/>
-
-            <View
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:layout_weight="1"/>
-
-            <com.google.android.material.button.MaterialButton
-                android:id="@+id/btnLogin"
-                android:layout_width="wrap_content"
-                android:layout_height="wrap_content"
-                android:text="FAZER LOGIN"
-                android:textAllCaps="true"
-                style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
+                android:text="Ficou preso? Reinicie o app ou toque no botão Início."
+                android:layout_marginTop="16dp"
+                android:textColor="?attr/colorOnSurfaceVariant"
+                android:textSize="14sp"
+                android:visibility="visible"/>
         </LinearLayout>
+    </FrameLayout>
 
-        <!-- Conteúdo da Home -->
-        <androidx.constraintlayout.widget.ConstraintLayout
+    <!-- Conteúdo Principal -->
+    <ScrollView
+        android:id="@+id/contentContainer"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:visibility="gone"
+        android:fillViewport="true"
+        android:paddingBottom="?attr/actionBarSize">
+
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="match_parent">
+            android:layout_height="wrap_content"
+            android:orientation="vertical"
+            android:padding="8dp">
 
-            <!-- Tela de erro de internet -->
-            <LinearLayout
-                android:id="@+id/layout_sem_internet"
+            <!-- Carrossel com proporção 8:3 otimizada para celular -->
+            <FrameLayout
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
-                android:background="@color/fundocartao"
-                android:orientation="vertical"
-                android:gravity="center"
-                android:visibility="gone"
-                android:padding="24dp"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent">
+                android:layout_marginHorizontal="4dp">
 
-                <ImageView
-                    android:layout_width="64dp"
-                    android:layout_height="64dp"
-                    android:src="@drawable/ic_no_connection"
-                    app:tint="?attr/colorOnSurface" />
+                <androidx.viewpager2.widget.ViewPager2
+                    android:id="@+id/viewPager"
+                    android:layout_width="match_parent"
+                    android:layout_height="150dp"
+                    android:clipToPadding="false"
+                    android:clipChildren="false"
+                    android:paddingHorizontal="16dp"
+                    android:overScrollMode="never"
+                    tools:itemCount="5" />
+            </FrameLayout>
+
+            <!-- Notícias -->
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:layout_marginTop="16dp"
+                android:padding="8dp">
 
                 <TextView
-                    android:layout_width="wrap_content"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:text="Sem internet"
-                    android:layout_marginTop="16dp"
-                    android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6"/>
+                    android:text="Notícias"
+                    android:textColor="?attr/colorOnSurface"
+                    android:textSize="20sp"
+                    android:layout_marginBottom="8dp"/>
 
-                <com.google.android.material.button.MaterialButton
-                    android:id="@+id/btn_tentar_novamente"
-                    android:layout_width="wrap_content"
+                <androidx.recyclerview.widget.RecyclerView
+                    android:id="@+id/newsRecyclerView"
+                    android:layout_width="match_parent"
                     android:layout_height="wrap_content"
-                    android:layout_marginTop="24dp"
-                    android:text="Tentar novamente"
-                    style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
-
+                    android:minHeight="120dp"
+                    android:orientation="horizontal"
+                    app:layoutManager="androidx.recyclerview.widget.LinearLayoutManager"
+                    tools:listitem="@layout/news_item"
+                    android:nestedScrollingEnabled="false"/>
             </LinearLayout>
+        </LinearLayout>
+    </ScrollView>
 
-            <WebView
-                android:id="@+id/webview"
-                android:layout_width="0dp"
-                android:layout_height="0dp"
-                android:visibility="invisible"
-                android:forceDarkAllowed="true"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+    <!-- Tela Offline -->
+    <LinearLayout
+        android:id="@+id/layout_sem_internet"
+        android:layout_width="match_parent"
+        android:layout_height="match_parent"
+        android:background="@color/fundocartao"
+        android:gravity="center"
+        android:orientation="vertical"
+        android:padding="32dp"
+        android:visibility="gone">
 
-            <FrameLayout
-                android:id="@+id/fullscreen_container"
-                android:layout_width="match_parent"
-                android:layout_height="match_parent"
-                android:visibility="gone"
-                app:layout_constraintTop_toTopOf="parent"
-                app:layout_constraintBottom_toBottomOf="parent"
-                app:layout_constraintStart_toStartOf="parent"
-                app:layout_constraintEnd_toEndOf="parent"/>
+        <ImageView
+            android:layout_width="64dp"
+            android:layout_height="64dp"
+            android:src="@drawable/ic_no_connection"
+            app:tint="?attr/colorOnSurface" />
 
-        </androidx.constraintlayout.widget.ConstraintLayout>
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="16dp"
+            android:text="Sem internet"
+            android:textAppearance="@style/TextAppearance.MaterialComponents.Headline6" />
+
+        <com.google.android.material.button.MaterialButton
+            android:id="@+id/btn_tentar_novamente"
+            style="@style/Widget.MaterialComponents.Button.OutlinedButton"
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="24dp"
+            android:text="TENTAR NOVAMENTE" />
     </LinearLayout>
-
 </androidx.coordinatorlayout.widget.CoordinatorLayout>

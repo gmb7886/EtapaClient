@@ -1,6 +1,8 @@
 <resources>
     <dimen name="news_min_height">120dp</dimen>
     <dimen name="carousel_margin">8dp</dimen>
+    <dimen name="carousel_height_mobile">150dp</dimen>
+    <dimen name="carousel_padding_horizontal">16dp</dimen>
     <dimen name="max_table_width">700dp</dimen>
     <dimen name="max_table_width_horarios">700dp</dimen>
     <dimen name="max_card_width">800dp</dimen>
@@ -11,4 +13,5 @@
     <dimen name="max_card_width_home">700dp</dimen>
     <dimen name="star_size">24dp</dimen>
     <dimen name="star_spacing">4dp</dimen>
+    <dimen name="carousel_height_tablet">240dp</dimen>
 </resources>

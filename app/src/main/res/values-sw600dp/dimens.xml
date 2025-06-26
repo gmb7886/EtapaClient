@@ -1,12 +1,14 @@
 <resources>
     <dimen name="news_min_height">180dp</dimen>
     <dimen name="carousel_margin">16dp</dimen>
+    <dimen name="carousel_height_tablet">240dp</dimen>
+    <dimen name="carousel_padding_horizontal">20dp</dimen>
     <dimen name="max_table_width">700dp</dimen>
     <dimen name="max_table_width_horarios">700dp</dimen>
     <dimen name="max_card_width">800dp</dimen>
     <dimen name="max_card_width_settings">450dp</dimen>
     <dimen name="max_card_width_provas">500dp</dimen>
     <dimen name="max_card_width_home">700dp</dimen>
-    <dimen name="carousel_min_height">150dp</dimen>
-    <dimen name="carousel_max_height">600dp</dimen>
+    <dimen name="carousel_min_height">240dp</dimen>
+    <dimen name="carousel_max_height">300dp</dimen>
 </resources>
