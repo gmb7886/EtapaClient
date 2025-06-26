@@ -4,8 +4,7 @@ import android.annotation.SuppressLint
 import android.content.Context
 import android.content.res.Configuration
 import android.net.ConnectivityManager
-import android.net.Network
-import android.net.NetworkCapabilities
+import android.net.NetworkInfo
 import android.os.Bundle
 import android.text.Html
 import android.util.Log
@@ -16,7 +15,6 @@ import android.webkit.CookieManager
 import android.webkit.WebView
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
-import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import com.google.android.material.card.MaterialCardView
 import com.google.android.material.progressindicator.CircularProgressIndicator
@@ -149,19 +147,19 @@ class RedacaoSemanalFragment : Fragment() {
         if (doc != null) {
             processarDocumento(doc)
         } else {
-            fetchRedacaoSemanal()
+            fetchRedacaoSemanal(URL_BASE)
         }
     }
 
-    private fun fetchRedacaoSemanal() {
+    private fun fetchRedacaoSemanal(url: String) {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 exibirCarregando()
 
                 val doc = withContext(Dispatchers.IO) {
                     try {
-                        val cookieHeader = CookieManager.getInstance().getCookie(URL_BASE)
-                        Jsoup.connect(URL_BASE)
+                        val cookieHeader = CookieManager.getInstance().getCookie(url)
+                        Jsoup.connect(url)
                             .header("Cookie", cookieHeader)
                             .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
                             .timeout(15000)
@@ -211,7 +209,8 @@ class RedacaoSemanalFragment : Fragment() {
         // Atualizar UI
         txtTitulo.text = titulo
         txtSugestoesTitulo.text = sugestoesTitulo
-        txtSugestoesConteudo.text = Html.fromHtml(sugestoesConteudo, Html.FROM_HTML_MODE_COMPACT)
+        txtSugestoesConteudo.text =
+            Html.fromHtml(sugestoesConteudo, Html.FROM_HTML_MODE_COMPACT)
 
         // Configurar WebView para a proposta com melhor legibilidade
         webViewProposta.settings.javaScriptEnabled = true
@@ -292,9 +291,9 @@ class RedacaoSemanalFragment : Fragment() {
     }
 
     private fun salvarCache(html: String) {
-        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit {
-            putString(KEY_CACHE, html)
-        }
+        requireContext().getSharedPreferences(PREFS, Context.MODE_PRIVATE).edit()
+            .putString(KEY_CACHE, html)
+            .apply()
     }
 
     private fun carregarCache() {
@@ -341,15 +340,9 @@ class RedacaoSemanalFragment : Fragment() {
 
     private fun isOnline(): Boolean {
         return try {
-            val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val network: Network? = connectivityManager.activeNetwork
-            val networkCapabilities = connectivityManager.getNetworkCapabilities(network)
-
-            networkCapabilities != null && (
-                    networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                            networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                            networkCapabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
-                    )
+            val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val netInfo: NetworkInfo? = cm.activeNetworkInfo
+            netInfo != null && netInfo.isConnected
         } catch (_: Exception) {
             false
         }

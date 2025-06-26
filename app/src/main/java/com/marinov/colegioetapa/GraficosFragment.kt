@@ -4,7 +4,7 @@ package com.marinov.colegioetapa
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
+import android.net.NetworkInfo
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -139,18 +139,18 @@ class GraficosFragment : Fragment() {
             return
         }
 
-        fetchGraficos()
+        fetchGraficos(URL_BASE)
     }
 
-    private fun fetchGraficos() {
+    private fun fetchGraficos(url: String) {
         CoroutineScope(Dispatchers.Main).launch {
             try {
                 exibirCarregando()
 
                 val doc = withContext(Dispatchers.IO) {
                     try {
-                        val cookieHeader = CookieManager.getInstance().getCookie(URL_BASE)
-                        Jsoup.connect(URL_BASE)
+                        val cookieHeader = CookieManager.getInstance().getCookie(url)
+                        Jsoup.connect(url)
                             .header("Cookie", cookieHeader)
                             .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
                             .timeout(15000)
@@ -253,7 +253,7 @@ class GraficosFragment : Fragment() {
             if (graficoItem.link.isNotBlank()) {
                 abrirWebViewFragment(graficoItem.link)
             } else {
-                Toast.makeText(requireContext(), R.string.link_nao_disponivel, Toast.LENGTH_SHORT).show()
+                Toast.makeText(requireContext(), "Link não disponível", Toast.LENGTH_SHORT).show()
             }
         }
         recyclerGraficos.adapter = adapter
@@ -297,9 +297,10 @@ class GraficosFragment : Fragment() {
         progressBar.visibility = View.GONE
     }
 
+    @SuppressLint("SetTextI18n")
     private fun exibirMensagemSemGraficos() {
         recyclerGraficos.visibility = View.GONE
-        txtSemGraficos.setText(R.string.nenhum_relatorio_encontrado)
+        txtSemGraficos.text = "Nenhum relatório encontrado."
         txtSemGraficos.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
         telaOffline.visibility = View.GONE
@@ -314,13 +315,9 @@ class GraficosFragment : Fragment() {
 
     private fun isOnline(): Boolean {
         return try {
-            val connectivityManager = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-
-            val network = connectivityManager.activeNetwork ?: return false
-            val capabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
-            return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val netInfo: NetworkInfo? = cm.activeNetworkInfo
+            netInfo != null && netInfo.isConnected
         } catch (_: Exception) {
             false
         }
@@ -349,10 +346,11 @@ class GraficosFragment : Fragment() {
             return ViewHolder(view)
         }
 
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
             holder.vestibular.text = item.vestibular
-            holder.numProvas.text = holder.itemView.context.getString(R.string.provas_format, item.numProvas)
+            holder.numProvas.text = "Provas: ${item.numProvas}"
 
             holder.card.setOnClickListener {
                 onClick(item)

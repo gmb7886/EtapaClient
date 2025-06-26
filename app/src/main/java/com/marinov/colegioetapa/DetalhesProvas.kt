@@ -3,7 +3,7 @@ package com.marinov.colegioetapa
 import android.annotation.SuppressLint
 import android.content.Context
 import android.net.ConnectivityManager
-import android.net.NetworkCapabilities
+import android.net.NetworkInfo
 import android.os.Bundle
 import android.util.Log
 import android.view.LayoutInflater
@@ -15,7 +15,6 @@ import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.TextView
 import androidx.activity.OnBackPressedCallback
-import androidx.core.content.edit
 import androidx.fragment.app.Fragment
 import androidx.recyclerview.widget.LinearLayoutManager
 import androidx.recyclerview.widget.RecyclerView
@@ -27,6 +26,7 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import org.jsoup.Jsoup
 import org.jsoup.nodes.Element
+import androidx.core.content.edit
 
 class DetalhesProvas : Fragment() {
 
@@ -148,7 +148,7 @@ class DetalhesProvas : Fragment() {
                         val cookieHeader = CookieManager.getInstance().getCookie(URL_BASE)
                         Jsoup.connect(URL_BASE)
                             .header("Cookie", cookieHeader)
-                            .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
+                            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
                             .timeout(15000)
                             .get()
                     } catch (e: Exception) {
@@ -249,7 +249,7 @@ class DetalhesProvas : Fragment() {
                         val cookieHeader = CookieManager.getInstance().getCookie(url)
                         Jsoup.connect(url)
                             .header("Cookie", cookieHeader)
-                            .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
+                            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
                             .timeout(15000)
                             .get()
                     } catch (e: Exception) {
@@ -381,20 +381,22 @@ class DetalhesProvas : Fragment() {
         txtSemProvas.visibility = View.GONE
         txtSemDados.visibility = View.GONE
         progressBar.visibility = View.GONE
-        habilitarInterface()
+        habilitarInterface(false)
     }
 
+    @SuppressLint("SetTextI18n")
     private fun exibirMensagemSemProvas() {
         recyclerDetalhes.visibility = View.GONE
-        txtSemProvas.setText(R.string.nenhum_cadastro_prova_encontrado)
+        txtSemProvas.text = "Nenhum cadastro de prova encontrado."
         txtSemProvas.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
         telaOffline.visibility = View.GONE
     }
 
+    @SuppressLint("SetTextI18n")
     private fun exibirInstrucao() {
         recyclerDetalhes.visibility = View.GONE
-        txtSemProvas.setText(R.string.selecione_conjunto_materia)
+        txtSemProvas.text = "Selecione o conjunto e a matéria."
         txtSemProvas.visibility = View.VISIBLE
         txtSemDados.visibility = View.GONE
         telaOffline.visibility = View.GONE
@@ -408,8 +410,7 @@ class DetalhesProvas : Fragment() {
         telaOffline.visibility = View.GONE
     }
 
-    private fun habilitarInterface() {
-        val habilitar = elementoCriticoPresente && isOnline()
+    private fun habilitarInterface(habilitar: Boolean) {
         contentLayout.alpha = if (habilitar) 1f else 0.3f
         spinnerConjunto.isEnabled = habilitar
         spinnerMateria.isEnabled = habilitar
@@ -419,11 +420,8 @@ class DetalhesProvas : Fragment() {
     private fun isOnline(): Boolean {
         return try {
             val cm = requireContext().getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
-            val network = cm.activeNetwork ?: return false
-            val capabilities = cm.getNetworkCapabilities(network) ?: return false
-            return capabilities.hasTransport(NetworkCapabilities.TRANSPORT_WIFI) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_CELLULAR) ||
-                    capabilities.hasTransport(NetworkCapabilities.TRANSPORT_ETHERNET)
+            val netInfo: NetworkInfo? = cm.activeNetworkInfo
+            netInfo != null && netInfo.isConnected
         } catch (_: Exception) {
             false
         }
@@ -445,11 +443,12 @@ class DetalhesProvas : Fragment() {
             return ViewHolder(view)
         }
 
+        @SuppressLint("SetTextI18n")
         override fun onBindViewHolder(holder: ViewHolder, position: Int) {
             val item = items[position]
             holder.txtCodigo.text = item.codigo
             holder.txtTipo.text = item.tipo
-            holder.txtNota.text = requireContext().getString(R.string.nota_placeholder, item.nota)
+            holder.txtNota.text = "Nota: ${item.nota}"
             holder.btnDetalhes.setOnClickListener {
                 (activity as? MainActivity)?.abrirDetalhesProva(item.link)
             }
