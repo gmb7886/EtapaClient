@@ -63,22 +63,24 @@
                 app:layout_constraintTop_toTopOf="parent"
                 app:layout_constraintWidth_max="@dimen/max_card_width_home">
 
-                <!-- Carrossel com proporção 8:3 otimizada para tablet -->
-                <FrameLayout
+                <!-- Carrossel otimizado para tablet -->
+                <androidx.cardview.widget.CardView
                     android:layout_width="match_parent"
-                    android:layout_height="wrap_content"
-                    android:layout_marginHorizontal="8dp">
+                    android:layout_height="@dimen/carousel_height_tablet"
+                    android:layout_marginHorizontal="@dimen/carousel_margin"
+                    android:layout_marginVertical="8dp"
+                    app:cardCornerRadius="16dp"
+                    app:cardElevation="6dp">
 
                     <androidx.viewpager2.widget.ViewPager2
                         android:id="@+id/viewPager"
                         android:layout_width="match_parent"
-                        android:layout_height="240dp"
+                        android:layout_height="match_parent"
                         android:clipToPadding="false"
                         android:clipChildren="false"
-                        android:paddingHorizontal="20dp"
                         android:overScrollMode="never"
                         tools:itemCount="5" />
-                </FrameLayout>
+                </androidx.cardview.widget.CardView>
 
                 <!-- Seção de Notícias -->
                 <LinearLayout

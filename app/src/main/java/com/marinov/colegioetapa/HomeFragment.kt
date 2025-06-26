@@ -12,6 +12,7 @@ import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import android.webkit.CookieManager
+import android.widget.FrameLayout
 import android.widget.ImageView
 import android.widget.LinearLayout
 import android.widget.TextView
@@ -52,6 +53,17 @@ class HomeFragment : Fragment() {
 
     private val handler = Handler(Looper.getMainLooper())
 
+    // Constantes para proporção das imagens do carrossel (800x300 = 8:3)
+    private companion object {
+        const val PREFS_NAME = "HomeFragmentCache"
+        const val KEY_CAROUSEL_ITEMS = "carousel_items"
+        const val KEY_NEWS_ITEMS = "news_items"
+        const val CAROUSEL_ASPECT_RATIO = 8f / 3f
+        const val KEY_CACHE_TIMESTAMP = "cache_timestamp"
+        const val HOME_URL = "https://areaexclusiva.colegioetapa.com.br/home"
+        const val OUT_URL = "https://areaexclusiva.colegioetapa.com.br"
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -66,6 +78,9 @@ class HomeFragment : Fragment() {
         initializeViews(view)
         setupRecyclerView()
         setupListeners()
+
+        // Configurar altura do carrossel antes de carregar dados
+        configureCarouselHeight()
 
         // Sempre força o carregamento inicial
         checkInternetAndLoadData()
@@ -91,7 +106,12 @@ class HomeFragment : Fragment() {
 
     override fun onConfigurationChanged(newConfig: Configuration) {
         super.onConfigurationChanged(newConfig)
-        // Remove lógica complexa de redimensionamento
+        // Reconfigurar altura do carrossel na mudança de orientação
+        configureCarouselHeight()
+        // Forçar recriação do adapter para aplicar nova altura
+        if (carouselItems.isNotEmpty()) {
+            setupCarousel()
+        }
     }
 
     override fun onDestroyView() {
@@ -122,6 +142,74 @@ class HomeFragment : Fragment() {
         btnTentarNovamente?.setOnClickListener {
             isDataLoaded = false
             checkInternetAndLoadData()
+        }
+    }
+
+    private fun configureCarouselHeight() {
+        val viewPager = this.viewPager ?: return
+
+        // Aguardar o ViewPager estar disponível para medição
+        viewPager.post {
+            if (isFragmentDestroyed) return@post
+
+            try {
+                val screenWidth = resources.displayMetrics.widthPixels
+                val isTablet = resources.configuration.screenWidthDp >= 600
+
+                // Padding horizontal baseado no tipo de dispositivo
+                val horizontalPadding = if (isTablet) {
+                    resources.getDimensionPixelSize(R.dimen.carousel_padding_horizontal) * 2 +
+                            resources.getDimensionPixelSize(R.dimen.carousel_margin) * 2
+                } else {
+                    resources.getDimensionPixelSize(R.dimen.carousel_padding_horizontal) * 2 +
+                            resources.getDimensionPixelSize(R.dimen.carousel_margin) * 2
+                }
+
+                val availableWidth = screenWidth - horizontalPadding
+
+                // Calcular altura baseada na proporção 8:3
+                val calculatedHeight = (availableWidth / CAROUSEL_ASPECT_RATIO).toInt()
+
+                // Obter limites min/max baseados no tipo de dispositivo
+                val (minHeight, maxHeight) = if (isTablet) {
+                    Pair(
+                        resources.getDimensionPixelSize(R.dimen.carousel_min_height),
+                        resources.getDimensionPixelSize(R.dimen.carousel_max_height)
+                    )
+                } else {
+                    // Para celular, usar valores mais restritivos
+                    Pair(
+                        resources.getDimensionPixelSize(R.dimen.carousel_min_height),
+                        resources.getDimensionPixelSize(R.dimen.carousel_max_height)
+                    )
+                }
+
+                // Aplicar limites
+                val finalHeight = calculatedHeight.coerceIn(minHeight, maxHeight)
+
+                // Configurar altura do ViewPager
+                val layoutParams = viewPager.layoutParams
+                if (layoutParams.height != finalHeight) {
+                    layoutParams.height = finalHeight
+                    layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+                    viewPager.layoutParams = layoutParams
+
+                    Log.d("HomeFragment", "Altura do carrossel configurada: $finalHeight px (calculada: $calculatedHeight px, ${if (isTablet) "tablet" else "mobile"})")
+                }
+
+                // Configurar propriedades do ViewPager para garantir comportamento de carrossel
+                viewPager.apply {
+                    clipToPadding = false
+                    clipChildren = false
+                    offscreenPageLimit = 1 // Mostrar apenas 1 item por vez
+
+                    // Remover qualquer PageTransformer que possa estar causando problemas
+                    setPageTransformer(null)
+                }
+
+            } catch (e: Exception) {
+                Log.e("HomeFragment", "Erro ao configurar altura do carrossel: ${e.message}")
+            }
         }
     }
 
@@ -424,29 +512,17 @@ class HomeFragment : Fragment() {
 
         Log.d("HomeFragment", "Configurando carrossel com ${carouselItems.size} itens")
 
-        // Força a configuração do ViewPager2 com altura fixa
+        // Sempre reconfigurar a altura (importante para rotação de tela)
+        configureCarouselHeight()
+
+        // Criar e configurar o adapter
+        val adapter = CarouselAdapter()
+        viewPager.adapter = adapter
+
+        // Log para debug
         viewPager.post {
             if (!isFragmentDestroyed) {
-                // Define altura mínima para garantir visibilidade
-                val layoutParams = viewPager.layoutParams
-                if (layoutParams.height == ViewGroup.LayoutParams.WRAP_CONTENT || layoutParams.height <= 0) {
-                    layoutParams.height = resources.getDimensionPixelSize(R.dimen.carousel_min_height)
-                    viewPager.layoutParams = layoutParams
-                }
-
-                // Sempre recria o adapter para garantir que funcione
-                viewPager.adapter = CarouselAdapter()
-
-                viewPager.apply {
-                    clipToPadding = false
-                    clipChildren = false
-                    offscreenPageLimit = 3
-                }
-
-                // Força refresh do layout
-                viewPager.requestLayout()
-
-                Log.d("HomeFragment", "ViewPager configurado com altura: ${layoutParams.height}")
+                Log.d("HomeFragment", "Carrossel configurado com altura: ${viewPager.layoutParams.height}px")
             }
         }
     }
@@ -456,7 +532,7 @@ class HomeFragment : Fragment() {
 
         Log.d("HomeFragment", "Configurando notícias com ${newsItems.size} itens")
 
-        // SIMPLIFICAÇÃO: Sempre recria o adapter para garantir que funcione
+        // Sempre recria o adapter para garantir que funcione
         newsRecyclerView?.adapter = NewsAdapter()
     }
 
@@ -470,25 +546,58 @@ class HomeFragment : Fragment() {
         override fun onBindViewHolder(holder: CarouselViewHolder, position: Int) {
             val item = carouselItems[position]
 
-            // Garante que a ImageView tenha altura fixa
-            val layoutParams = holder.imageView.layoutParams
-            if (layoutParams.height == ViewGroup.LayoutParams.WRAP_CONTENT || layoutParams.height <= 0) {
-                layoutParams.height = resources.getDimensionPixelSize(R.dimen.carousel_min_height)
-                holder.imageView.layoutParams = layoutParams
+            // Configurar a ImageView para ocupar todo o espaço sem margens
+            holder.imageView.apply {
+                scaleType = ImageView.ScaleType.CENTER_CROP
+                adjustViewBounds = false
+
+                // Garantir que a ImageView ocupe todo o container sem padding/margin
+                val layoutParams = this.layoutParams as FrameLayout.LayoutParams
+                layoutParams.height = ViewGroup.LayoutParams.MATCH_PARENT
+                layoutParams.width = ViewGroup.LayoutParams.MATCH_PARENT
+                layoutParams.setMargins(0, 0, 0, 0)
+                this.layoutParams = layoutParams
+
+                // Remover qualquer padding que possa existir
+                setPadding(0, 0, 0, 0)
             }
 
-            Glide.with(holder.itemView.context)
+            // Obter altura real do ViewPager para garantir dimensões corretas
+            val context = holder.itemView.context
+            val viewPager = this@HomeFragment.viewPager
+
+            val actualWidth = viewPager?.width ?: context.resources.displayMetrics.widthPixels
+            val actualHeight = viewPager?.height ?: run {
+                val screenWidth = context.resources.displayMetrics.widthPixels
+                val isTablet = context.resources.configuration.screenWidthDp >= 600
+
+                val horizontalPadding = if (isTablet) {
+                    context.resources.getDimensionPixelSize(R.dimen.carousel_padding_horizontal) * 2 +
+                            context.resources.getDimensionPixelSize(R.dimen.carousel_margin) * 2
+                } else {
+                    context.resources.getDimensionPixelSize(R.dimen.carousel_padding_horizontal) * 2 +
+                            context.resources.getDimensionPixelSize(R.dimen.carousel_margin) * 2
+                }
+
+                val targetWidth = screenWidth - horizontalPadding
+                (targetWidth / CAROUSEL_ASPECT_RATIO).toInt()
+            }
+
+            // Carregar imagem com dimensões exatas do container
+            Glide.with(context)
                 .load(item.imageUrl)
                 .centerCrop()
                 .placeholder(android.R.drawable.ic_menu_gallery)
                 .error(android.R.drawable.ic_menu_gallery)
+                .override(actualWidth, actualHeight)
+                .fitCenter() // Adicionar fitCenter para garantir que a imagem se ajuste perfeitamente
                 .into(holder.imageView)
 
             holder.itemView.setOnClickListener {
                 item.linkUrl?.let { url -> navigateToWebView(url) }
             }
 
-            Log.d("HomeFragment", "Carregando imagem do carrossel: ${item.imageUrl}")
+            Log.d("HomeFragment", "Carregando imagem do carrossel (posição $position): ${item.imageUrl} - ${actualWidth}x$actualHeight")
         }
 
         override fun getItemCount(): Int = carouselItems.size
@@ -540,14 +649,4 @@ class HomeFragment : Fragment() {
         val description: String?,
         val link: String?
     )
-
-    companion object {
-        private const val PREFS_NAME = "HomeFragmentCache"
-        private const val KEY_CAROUSEL_ITEMS = "carousel_items"
-        private const val KEY_NEWS_ITEMS = "news_items"
-        private const val KEY_CACHE_TIMESTAMP = "cache_timestamp"
-
-        private const val HOME_URL = "https://areaexclusiva.colegioetapa.com.br/home"
-        private const val OUT_URL = "https://areaexclusiva.colegioetapa.com.br"
-    }
 }
