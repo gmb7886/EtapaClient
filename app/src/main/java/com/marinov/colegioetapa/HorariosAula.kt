@@ -77,7 +77,7 @@ class HorariosAula : Fragment() {
                         val cookieHeader = CookieManager.getInstance().getCookie(URL_HORARIOS)
                         Jsoup.connect(URL_HORARIOS)
                             .header("Cookie", cookieHeader)
-                            .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
+                            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
                             .timeout(15000)
                             .get()
                     } catch (e: Exception) {
