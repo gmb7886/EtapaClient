@@ -371,13 +371,13 @@
                     android:layout_height="24dp"
                     android:src="@drawable/ic_assignment_24"
                     android:tint="@color/icon_tint"
-                    android:contentDescription="Provas anteriores"
+                    android:contentDescription="Provas e materiais dos anos anteriores"
                     android:layout_marginEnd="16dp" />
 
                 <TextView
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
-                    android:text="Provas anteriores"
+                    android:text="Provas e materiais dos anos anteriores"
                     android:textAppearance="?android:attr/textAppearanceListItem" />
             </LinearLayout>
 
