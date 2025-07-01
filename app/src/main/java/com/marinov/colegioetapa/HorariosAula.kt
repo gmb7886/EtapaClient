@@ -32,10 +32,14 @@ class HorariosAula : Fragment() {
         const val URL_HORARIOS = "https://areaexclusiva.colegioetapa.com.br/horarios/aulas"
         const val PREFS = "horarios_prefs"
         const val KEY_HTML = "cache_html_horarios"
+        const val ALERT_SELECTOR = "div.alert.alert-info.alert-font.text-center.m-0"
     }
 
     private lateinit var tableHorarios: TableLayout
     private lateinit var barOffline: LinearLayout
+    private lateinit var messageContainer: LinearLayout
+    private lateinit var tvMessage: TextView
+    private lateinit var scrollContainer: androidx.core.widget.NestedScrollView
     private lateinit var cache: CacheHelper
 
     override fun onCreateView(
@@ -46,6 +50,10 @@ class HorariosAula : Fragment() {
         val root = inflater.inflate(R.layout.fragment_horarios, container, false)
         tableHorarios = root.findViewById(R.id.tableHorarios)
         barOffline = root.findViewById(R.id.barOffline)
+        messageContainer = root.findViewById(R.id.messageContainer)
+        tvMessage = root.findViewById(R.id.tvMessage)
+        scrollContainer = root.findViewById(R.id.scrollContainer)
+
         val btnLogin: MaterialButton = root.findViewById(R.id.btnLogin)
         cache = CacheHelper(requireContext())
 
@@ -77,7 +85,7 @@ class HorariosAula : Fragment() {
                         val cookieHeader = CookieManager.getInstance().getCookie(URL_HORARIOS)
                         Jsoup.connect(URL_HORARIOS)
                             .header("Cookie", cookieHeader)
-                            .userAgent("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/137.0.0.0 Safari/537.36")
+                            .userAgent("Mozilla/5.0 (Macintosh; Intel Mac OS X 14_7_6) AppleWebKit/605.1.15 (KHTML, like Gecko) Version/18.4 Safari/605.1.15")
                             .timeout(15000)
                             .get()
                     } catch (e: Exception) {
@@ -87,19 +95,20 @@ class HorariosAula : Fragment() {
                 }
 
                 if (doc != null) {
-                    val table = doc.selectFirst(
+                    val contentSelector =
                         "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > " +
                                 "div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > " +
-                                "div > div.card-body > table"
-                    )
+                                "div > div.card-body"
 
-                    if (table != null) {
-                        cache.saveHtml(table.outerHtml())
-                        parseAndBuildTable(table)
+                    val contentDiv = doc.selectFirst(contentSelector)
+
+                    if (contentDiv != null) {
+                        cache.saveHtml(contentDiv.outerHtml())
+                        parseAndBuildContent(contentDiv)
                         hideOfflineBar()
                     } else {
                         showOfflineBar()
-                        Log.e("HorariosAula", "Tabela não encontrada no HTML")
+                        Log.e("HorariosAula", "Conteúdo não encontrado no HTML")
                         loadCachedData()
                     }
                 } else {
@@ -119,15 +128,38 @@ class HorariosAula : Fragment() {
         val html = cache.loadHtml()
         if (html != null) {
             val fake = Jsoup.parse(html)
-            val table = fake.selectFirst("table")
-            if (table != null) {
-                parseAndBuildTable(table)
+            val contentDiv = fake.selectFirst("div.card-body")
+            if (contentDiv != null) {
+                parseAndBuildContent(contentDiv)
             }
         }
     }
 
-    private fun parseAndBuildTable(table: Element) {
+    private fun parseAndBuildContent(contentDiv: Element) {
+        // Resetar todas as views
+        hideMessage()
+        scrollContainer.visibility = View.VISIBLE
         tableHorarios.removeAllViews()
+
+        // Verifica se existe o alerta de "Não há aulas"
+        val alert = contentDiv.selectFirst(ALERT_SELECTOR)
+        if (alert != null) {
+            showNoClassesMessage(alert.text())
+            return
+        }
+
+        // Tenta encontrar a tabela de horários
+        val table = contentDiv.selectFirst("table")
+        if (table != null) {
+            parseAndBuildTable(table)
+            return
+        }
+
+        // Se não encontrou nem alerta nem tabela
+        showOfflineBar()
+    }
+
+    private fun parseAndBuildTable(table: Element) {
         val headerBgColor = ContextCompat.getColor(requireContext(), R.color.colorPrimary)
         val textColor = ContextCompat.getColor(requireContext(), R.color.colorOnSurface)
 
@@ -166,6 +198,16 @@ class HorariosAula : Fragment() {
             }
             tableHorarios.addView(row)
         }
+    }
+
+    private fun showNoClassesMessage(message: String) {
+        scrollContainer.visibility = View.GONE
+        tvMessage.text = message
+        messageContainer.visibility = View.VISIBLE
+    }
+
+    private fun hideMessage() {
+        messageContainer.visibility = View.GONE
     }
 
     private fun createCell(text: String, isHeader: Boolean): TextView {

@@ -27,7 +27,7 @@
                 android:layout_width="24dp"
                 android:layout_height="24dp"
                 android:src="@drawable/ic_no_connection"
-                android:tint="?attr/colorOnErrorContainer"/>
+                app:tint="?attr/colorOnErrorContainer" />
 
             <TextView
                 android:layout_width="wrap_content"
@@ -51,43 +51,69 @@
                 style="@style/Widget.MaterialComponents.Button.OutlinedButton"/>
         </LinearLayout>
 
-        <!-- Conteúdo Principal - Adaptado para tablets -->
-        <androidx.core.widget.NestedScrollView
+        <!-- Contêiner Principal para Tablet -->
+        <FrameLayout
             android:layout_width="match_parent"
             android:layout_height="match_parent"
-            android:fillViewport="true">
+            android:padding="8dp">
 
-            <androidx.constraintlayout.widget.ConstraintLayout
+            <!-- Contêiner para tabela -->
+            <androidx.core.widget.NestedScrollView
+                android:id="@+id/scrollContainer"
                 android:layout_width="match_parent"
-                android:layout_height="wrap_content"
-                android:padding="8dp">
+                android:layout_height="match_parent"
+                android:fillViewport="true">
 
-                <HorizontalScrollView
-                    android:layout_width="0dp"
-                    android:layout_height="wrap_content"
-                    android:contentDescription="@string/desc_tabela_notas"                    app:layout_constraintStart_toStartOf="parent"
-                    app:layout_constraintEnd_toEndOf="parent"
-                    app:layout_constraintTop_toTopOf="parent"
-                    app:layout_constraintBottom_toBottomOf="parent"
-                    app:layout_constraintWidth_max="@dimen/max_table_width_horarios">
+                <androidx.constraintlayout.widget.ConstraintLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content">
 
-                    <com.google.android.material.card.MaterialCardView
-                        android:layout_width="wrap_content"
+                    <HorizontalScrollView
+                        android:layout_width="0dp"
                         android:layout_height="wrap_content"
-                        app:cardCornerRadius="8dp"
-                        app:cardElevation="4dp">
+                        android:contentDescription="@string/desc_tabela_notas"
+                        app:layout_constraintStart_toStartOf="parent"
+                        app:layout_constraintEnd_toEndOf="parent"
+                        app:layout_constraintTop_toTopOf="parent"
+                        app:layout_constraintBottom_toBottomOf="parent"
+                        app:layout_constraintWidth_max="@dimen/max_table_width_horarios">
 
-                        <TableLayout
-                            android:id="@+id/tableHorarios"
+                        <com.google.android.material.card.MaterialCardView
                             android:layout_width="wrap_content"
                             android:layout_height="wrap_content"
-                            android:shrinkColumns="*"
-                            android:stretchColumns="*"
-                            android:background="@color/fundocartao"/>
+                            app:cardCornerRadius="8dp"
+                            app:cardElevation="4dp">
 
-                    </com.google.android.material.card.MaterialCardView>
-                </HorizontalScrollView>
-            </androidx.constraintlayout.widget.ConstraintLayout>
-        </androidx.core.widget.NestedScrollView>
+                            <TableLayout
+                                android:id="@+id/tableHorarios"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:shrinkColumns="*"
+                                android:stretchColumns="*"
+                                android:background="@color/fundocartao"/>
+                        </com.google.android.material.card.MaterialCardView>
+                    </HorizontalScrollView>
+                </androidx.constraintlayout.widget.ConstraintLayout>
+            </androidx.core.widget.NestedScrollView>
+
+            <!-- Contêiner para mensagem centralizada -->
+            <LinearLayout
+                android:id="@+id/messageContainer"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:visibility="gone"
+                android:padding="16dp">
+
+                <TextView
+                    android:id="@+id/tvMessage"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:textAppearance="?attr/textAppearanceHeadline6"
+                    android:textColor="?attr/colorOnSurface"
+                    android:gravity="center"
+                    android:textAlignment="center"/>
+            </LinearLayout>
+        </FrameLayout>
     </LinearLayout>
 </androidx.coordinatorlayout.widget.CoordinatorLayout>
