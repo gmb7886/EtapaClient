@@ -33,7 +33,7 @@ import com.google.android.material.color.MaterialColors
 import com.google.android.material.navigationrail.NavigationRailView
 import java.util.concurrent.TimeUnit
 
-class MainActivity : AppCompatActivity() {
+class MainActivity : AppCompatActivity(), WebViewFragment.LoginSuccessListener {
 
     companion object {
         private const val REQUEST_NOTIFICATION_PERMISSION = 100
@@ -96,6 +96,25 @@ class MainActivity : AppCompatActivity() {
         solicitarPermissaoNotificacao()
         iniciarNotasWorker()
         iniciarUpdateWorker()
+    }
+
+    override fun onLoginSuccess() {
+        // Encontrar o HomeFragment atual e notificar sobre o login bem-sucedido
+        val currentFragment = supportFragmentManager.findFragmentById(R.id.nav_host_fragment)
+
+        // Se o fragment atual não é HomeFragment, procurar na pilha de fragments
+        if (currentFragment !is HomeFragment) {
+            // Procurar HomeFragment na pilha de fragments
+            for (fragment in supportFragmentManager.fragments) {
+                if (fragment is HomeFragment && fragment.isAdded) {
+                    fragment.onLoginSuccess()
+                    break
+                }
+            }
+        } else {
+            // Se o fragment atual já é HomeFragment, chamar diretamente
+            currentFragment.onLoginSuccess()
+        }
     }
 
     override fun onNewIntent(intent: Intent?) {

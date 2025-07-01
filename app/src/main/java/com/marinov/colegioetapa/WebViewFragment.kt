@@ -60,7 +60,9 @@ class WebViewFragment : Fragment() {
     private lateinit var layoutSemInternet: LinearLayout
     private lateinit var btnTentarNovamente: MaterialButton
     private lateinit var sharedPrefs: SharedPreferences
-
+    interface LoginSuccessListener {
+        fun onLoginSuccess()
+    }
     companion object {
         private const val ARG_URL = "url"
         private const val HOME_PATH = "https://areaexclusiva.colegioetapa.com.br/home"
@@ -189,7 +191,7 @@ class WebViewFragment : Fragment() {
                         "return (a!==null&&b!==null).toString();})();"
                 view.evaluateJavascript(jsCheck) { result ->
                     if (result.trim('"') == "true" && url.startsWith(HOME_PATH)) {
-                        requireActivity().supportFragmentManager.popBackStack()
+                        simulateHomeButtonClick()
                     }
                 }
                 if (isSystemDarkMode()) injectCssDarkMode(view)
@@ -207,9 +209,29 @@ class WebViewFragment : Fragment() {
 
             override fun doUpdateVisitedHistory(view: WebView, url: String, isReload: Boolean) {
                 injectAutoFillScript(view)
+
+                // Verificar se chegou na página home através do histórico também
+                if (url.startsWith(HOME_PATH)) {
+                    // Pequeno delay para garantir que a página carregou completamente
+                    Handler(Looper.getMainLooper()).postDelayed({
+                        val jsCheck = "(function(){" +
+                                "var a=document.querySelector('#home_banners_carousel > div > div.carousel-item.active > a > img');" +
+                                "var b=document.querySelector('#page-content-wrapper .border-blue');" +
+                                "return (a!==null&&b!==null).toString();})();"
+                        view.evaluateJavascript(jsCheck) { result ->
+                            if (result.trim('"') == "true") {
+                                // Simular clique no botão "início" do menu
+                                simulateHomeButtonClick()
+                            }
+                        }
+                    }, 1000)
+                }
             }
         }
         configureDownloadListener()
+    }
+    private fun simulateHomeButtonClick() {
+        (activity as? MainActivity)?.navigateToHome()
     }
 
     private fun removeHeader(view: WebView) {

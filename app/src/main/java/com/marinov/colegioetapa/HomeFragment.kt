@@ -64,6 +64,24 @@ class HomeFragment : Fragment() {
         const val OUT_URL = "https://areaexclusiva.colegioetapa.com.br"
     }
 
+    override fun onAttach(context: Context) {
+        super.onAttach(context)
+        if (context !is WebViewFragment.LoginSuccessListener) {
+            throw RuntimeException("$context deve implementar LoginSuccessListener")
+        }
+    }
+
+    // Função para ser chamada pela Activity quando login for bem-sucedido
+    fun onLoginSuccess() {
+        Log.d("HomeFragment", "Login bem-sucedido - forçando recarregamento")
+        // Limpar cache para garantir dados frescos
+        clearCache()
+        // Resetar estado
+        isDataLoaded = false
+        // Forçar recarregamento
+        checkInternetAndLoadData()
+    }
+
     override fun onCreateView(
         inflater: LayoutInflater,
         container: ViewGroup?,
@@ -95,10 +113,9 @@ class HomeFragment : Fragment() {
         super.onResume()
         shouldBlockNavigation = false
 
-        // Se o fragment já foi visível antes, força recarregamento
-        if (hasBeenVisible) {
-            Log.d("HomeFragment", "Retornando do WebView - forçando recarregamento")
-            isDataLoaded = false
+        // Se o fragment já foi visível antes, verifica se precisa recarregar
+        if (hasBeenVisible && !isDataLoaded) {
+            Log.d("HomeFragment", "Retornando do WebView - verificando necessidade de recarregamento")
             checkInternetAndLoadData()
         }
         hasBeenVisible = true
@@ -231,6 +248,11 @@ class HomeFragment : Fragment() {
 
                 // Sempre busca dados frescos
                 fetchDataInBackground()
+            } else {
+                // Se dados já estão carregados, mas queremos forçar recarregamento
+                // (caso do retorno do login), mostra loading brevemente
+                showLoadingState()
+                fetchDataInBackground()
             }
         } else {
             showOfflineState()
@@ -249,19 +271,14 @@ class HomeFragment : Fragment() {
                         processPageContent(doc)
                         saveCache()
 
-                        if (!isDataLoaded) {
-                            // Delay apenas se estava no loading
-                            handler.postDelayed({
-                                if (!isFragmentDestroyed) {
-                                    showContentState()
-                                    setupUI()
-                                    isDataLoaded = true
-                                }
-                            }, 800)
-                        } else {
-                            // Atualização silenciosa - força recriação dos adapters
-                            setupUI()
-                        }
+                        // Sempre mostra conteúdo após carregar dados
+                        handler.postDelayed({
+                            if (!isFragmentDestroyed) {
+                                showContentState()
+                                setupUI()
+                                isDataLoaded = true
+                            }
+                        }, 500) // Delay menor para UX mais fluida
                     } else {
                         handleInvalidSession()
                     }
