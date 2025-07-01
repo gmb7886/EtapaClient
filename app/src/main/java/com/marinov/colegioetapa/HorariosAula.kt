@@ -127,10 +127,31 @@ class HorariosAula : Fragment() {
     private fun loadCachedData() {
         val html = cache.loadHtml()
         if (html != null) {
-            val fake = Jsoup.parse(html)
-            val contentDiv = fake.selectFirst("div.card-body")
-            if (contentDiv != null) {
-                parseAndBuildContent(contentDiv)
+            try {
+                // Cria um documento temporário com o HTML cacheado
+                val fakeDoc = Jsoup.parseBodyFragment(html)
+
+                // Tenta encontrar o conteúdo usando o mesmo seletor original
+                val contentDiv = fakeDoc.selectFirst(
+                    "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > " +
+                            "div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > " +
+                            "div > div.card-body"
+                )
+
+                // Se não encontrar pelo seletor, tenta encontrar diretamente
+                contentDiv?.let { parseAndBuildContent(it) } ?: run {
+                    // Fallback: busca por alerta ou tabela diretamente
+                    val alert = fakeDoc.selectFirst(ALERT_SELECTOR)
+                    val table = fakeDoc.selectFirst("table")
+
+                    when {
+                        alert != null -> showNoClassesMessage(alert.text())
+                        table != null -> parseAndBuildTable(table)
+                        else -> Log.e("HorariosAula", "Nenhum conteúdo válido encontrado no cache")
+                    }
+                }
+            } catch (e: Exception) {
+                Log.e("HorariosAula", "Erro ao processar cache", e)
             }
         }
     }
