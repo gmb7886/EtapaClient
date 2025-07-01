@@ -95,20 +95,28 @@ class HorariosAula : Fragment() {
                 }
 
                 if (doc != null) {
-                    val contentSelector =
+                    // Verificar se há mensagem de "Não há aulas"
+                    val alert = doc.selectFirst(ALERT_SELECTOR)
+                    if (alert != null) {
+                        showNoClassesMessage(alert.text())
+                        hideOfflineBar()
+                        return@launch
+                    }
+
+                    // Buscar tabela como no código original
+                    val table = doc.selectFirst(
                         "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > " +
                                 "div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > " +
-                                "div > div.card-body"
+                                "div > div.card-body > table"
+                    )
 
-                    val contentDiv = doc.selectFirst(contentSelector)
-
-                    if (contentDiv != null) {
-                        cache.saveHtml(contentDiv.outerHtml())
-                        parseAndBuildContent(contentDiv)
+                    if (table != null) {
+                        cache.saveHtml(table.outerHtml())
+                        parseAndBuildTable(table)
                         hideOfflineBar()
                     } else {
                         showOfflineBar()
-                        Log.e("HorariosAula", "Conteúdo não encontrado no HTML")
+                        Log.e("HorariosAula", "Tabela não encontrada no HTML")
                         loadCachedData()
                     }
                 } else {
@@ -128,59 +136,26 @@ class HorariosAula : Fragment() {
         val html = cache.loadHtml()
         if (html != null) {
             try {
-                // Cria um documento temporário com o HTML cacheado
-                val fakeDoc = Jsoup.parseBodyFragment(html)
-
-                // Tenta encontrar o conteúdo usando o mesmo seletor original
-                val contentDiv = fakeDoc.selectFirst(
-                    "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > " +
-                            "div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > " +
-                            "div > div.card-body"
-                )
-
-                // Se não encontrar pelo seletor, tenta encontrar diretamente
-                contentDiv?.let { parseAndBuildContent(it) } ?: run {
-                    // Fallback: busca por alerta ou tabela diretamente
-                    val alert = fakeDoc.selectFirst(ALERT_SELECTOR)
-                    val table = fakeDoc.selectFirst("table")
-
-                    when {
-                        alert != null -> showNoClassesMessage(alert.text())
-                        table != null -> parseAndBuildTable(table)
-                        else -> Log.e("HorariosAula", "Nenhum conteúdo válido encontrado no cache")
-                    }
+                val table = Jsoup.parse(html).selectFirst("table")
+                if (table != null) {
+                    parseAndBuildTable(table)
+                    hideOfflineBar()
+                } else {
+                    showOfflineBar()
                 }
             } catch (e: Exception) {
                 Log.e("HorariosAula", "Erro ao processar cache", e)
+                showOfflineBar()
             }
         }
     }
 
-    private fun parseAndBuildContent(contentDiv: Element) {
-        // Resetar todas as views
+    private fun parseAndBuildTable(table: Element) {
+        // Garantir que a mensagem esteja oculta
         hideMessage()
         scrollContainer.visibility = View.VISIBLE
         tableHorarios.removeAllViews()
 
-        // Verifica se existe o alerta de "Não há aulas"
-        val alert = contentDiv.selectFirst(ALERT_SELECTOR)
-        if (alert != null) {
-            showNoClassesMessage(alert.text())
-            return
-        }
-
-        // Tenta encontrar a tabela de horários
-        val table = contentDiv.selectFirst("table")
-        if (table != null) {
-            parseAndBuildTable(table)
-            return
-        }
-
-        // Se não encontrou nem alerta nem tabela
-        showOfflineBar()
-    }
-
-    private fun parseAndBuildTable(table: Element) {
         val headerBgColor = ContextCompat.getColor(requireContext(), R.color.colorPrimary)
         val textColor = ContextCompat.getColor(requireContext(), R.color.colorOnSurface)
 
