@@ -33,6 +33,9 @@ class HorariosAula : Fragment() {
         const val PREFS = "horarios_prefs"
         const val KEY_HTML = "cache_html_horarios"
         const val ALERT_SELECTOR = "div.alert.alert-info.alert-font.text-center.m-0"
+        const val CONTENT_SELECTOR = "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > " +
+                "div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > " +
+                "div > div.card-body"
     }
 
     private lateinit var tableHorarios: TableLayout
@@ -95,39 +98,36 @@ class HorariosAula : Fragment() {
                 }
 
                 if (doc != null) {
-                    // Verificar se há mensagem de "Não há aulas"
-                    val alert = doc.selectFirst(ALERT_SELECTOR)
-                    if (alert != null) {
-                        showNoClassesMessage(alert.text())
-                        hideOfflineBar()
-                        return@launch
-                    }
+                    // Encontramos conteúdo online
+                    val contentDiv = doc.selectFirst(CONTENT_SELECTOR)
 
-                    // Buscar tabela como no código original
-                    val table = doc.selectFirst(
-                        "#page-content-wrapper > div.d-lg-flex > div.container-fluid.p-3 > " +
-                                "div.card.bg-transparent.border-0 > div.card-body.px-0.px-md-3 > " +
-                                "div > div.card-body > table"
-                    )
+                    if (contentDiv != null) {
+                        // Salva TODO o conteúdo no cache (tabela ou mensagem)
+                        cache.saveHtml(contentDiv.outerHtml())
 
-                    if (table != null) {
-                        cache.saveHtml(table.outerHtml())
-                        parseAndBuildTable(table)
+                        // Processa o conteúdo imediatamente
+                        parseContent(contentDiv)
                         hideOfflineBar()
                     } else {
+                        // Usuário deslogado ou estrutura alterada
                         showOfflineBar()
-                        Log.e("HorariosAula", "Tabela não encontrada no HTML")
+                        Log.e("HorariosAula", "Conteúdo não encontrado - usuário provavelmente deslogado")
+
+                        // Tenta carregar cache mesmo online
                         loadCachedData()
                     }
                 } else {
-                    loadCachedData()
+                    // Sem conexão com a internet
                     showOfflineBar()
-                    Log.e("HorariosAula", "Falha na conexão — usando cache")
+                    Log.e("HorariosAula", "Falha na conexão")
+
+                    // Tenta carregar cache offline
+                    loadCachedData()
                 }
             } catch (e: Exception) {
                 Log.e("HorariosAula", "Erro inesperado", e)
-                loadCachedData()
                 showOfflineBar()
+                loadCachedData()
             }
         }
     }
@@ -136,26 +136,41 @@ class HorariosAula : Fragment() {
         val html = cache.loadHtml()
         if (html != null) {
             try {
-                val table = Jsoup.parse(html).selectFirst("table")
-                if (table != null) {
-                    parseAndBuildTable(table)
-                    hideOfflineBar()
-                } else {
-                    showOfflineBar()
+                // Recria o elemento div do cache
+                val fake = Jsoup.parse(html)
+                val contentDiv = fake.selectFirst("div.card-body")
+
+                if (contentDiv != null) {
+                    parseContent(contentDiv)
                 }
             } catch (e: Exception) {
                 Log.e("HorariosAula", "Erro ao processar cache", e)
-                showOfflineBar()
             }
         }
     }
 
-    private fun parseAndBuildTable(table: Element) {
-        // Garantir que a mensagem esteja oculta
+    private fun parseContent(contentDiv: Element) {
+        // Resetar todas as views
         hideMessage()
         scrollContainer.visibility = View.VISIBLE
         tableHorarios.removeAllViews()
 
+        // Primeiro verifica se há mensagem de "Não há aulas"
+        val alert = contentDiv.selectFirst(ALERT_SELECTOR)
+        if (alert != null) {
+            showNoClassesMessage(alert.text())
+            return
+        }
+
+        // Tenta encontrar a tabela de horários
+        val table = contentDiv.selectFirst("table")
+        if (table != null) {
+            parseAndBuildTable(table)
+            return
+        }
+    }
+
+    private fun parseAndBuildTable(table: Element) {
         val headerBgColor = ContextCompat.getColor(requireContext(), R.color.colorPrimary)
         val textColor = ContextCompat.getColor(requireContext(), R.color.colorOnSurface)
 
